@@ -80,16 +80,16 @@ Then run the following:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Start development server
-npm run dev:chrome    # For Chrome
-npm run dev:firefox   # For Firefox
+pnpm dev:chrome    # For Chrome
+pnpm dev:firefox   # For Firefox
 
 # Build for production
-npm run build:chrome  # Build Chrome extension
-npm run build:firefox # Build Firefox addon
-npm run build         # Build for all browsers
+pnpm build:chrome  # Build Chrome extension
+pnpm build:firefox # Build Firefox addon
+pnpm build         # Build for all browsers
 ```
 
 ## Project Structure
@@ -146,20 +146,20 @@ See [vite-plugin-wext-manifest](https://github.com/abhijithvijayan/vite-plugin-w
 
 ## Scripts
 
-| Script              | Description                              |
-| ------------------- | ---------------------------------------- |
-| `npm run dev:chrome`  | Start dev server for Chrome            |
-| `npm run dev:firefox` | Start dev server for Firefox           |
-| `npm run build:chrome`| Build production Chrome extension      |
-| `npm run build:firefox`| Build production Firefox addon        |
-| `npm run build`       | Build for all browsers                 |
-| `npm run lint`        | Run ESLint                             |
-| `npm run lint:fix`    | Run ESLint with auto-fix               |
+| Script                | Description                         |
+| --------------------- | ----------------------------------- |
+| `pnpm dev:chrome`     | Start dev server for Chrome         |
+| `pnpm dev:firefox`    | Start dev server for Firefox        |
+| `pnpm build:chrome`   | Build production Chrome extension   |
+| `pnpm build:firefox`  | Build production Firefox addon      |
+| `pnpm build`          | Build for all browsers              |
+| `pnpm lint`           | Run Biome (lint + format)           |
+| `pnpm lint:fix`       | Run Biome with auto-fix             |
 
 ## Linting & TypeScript Config
 
-- Shared ESLint & Prettier Configuration - [`@abhijithvijayan/eslint-config`](https://www.npmjs.com/package/@abhijithvijayan/eslint-config)
-- Shared TypeScript Configuration - [`@abhijithvijayan/tsconfig`](https://www.npmjs.com/package/@abhijithvijayan/tsconfig)
+- **Linting & Formatting**: [Biome](https://biomejs.dev/) 2.x — configured in `biome.json`
+- **TypeScript**: Shared configuration from [`@abhijithvijayan/tsconfig`](https://www.npmjs.com/package/@abhijithvijayan/tsconfig)
 
 ## Bugs
 

@@ -6,24 +6,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 这是一个基于 **React 19 + TypeScript + Vite** 的跨浏览器 Web 扩展（Chrome / Firefox）项目，使用 Manifest V3。项目基于 `web-extension-starter` 模板构建。
 
+**工具链变更**（相对于原始模板）：
+
+- 包管理器使用 **pnpm**（原 npm）
+- 代码检查使用 **Biome**（原 ESLint + Prettier），已移除 `eslint.config.mjs`
+- 已移除 `autoprefixer` / `postcss` / `postcss.config.js`
+
 ## 常用命令
 
 ```bash
 # 开发模式（带 watch）
-npm run dev:chrome    # Chrome 扩展开发模式
-npm run dev:firefox   # Firefox 扩展开发模式
+pnpm dev:chrome    # Chrome 扩展开发模式
+pnpm dev:firefox   # Firefox 扩展开发模式
 
 # 生产构建
-npm run build:chrome   # 构建 Chrome 扩展，输出到 extension/chrome/
-npm run build:firefox  # 构建 Firefox 扩展，输出到 extension/firefox/
-npm run build          # 同时构建所有浏览器版本
+pnpm build:chrome   # 构建 Chrome 扩展，输出到 extension/chrome/
+pnpm build:firefox  # 构建 Firefox 扩展，输出到 extension/firefox/
+pnpm build          # 同时构建所有浏览器版本
 
 # 代码检查
-npm run lint           # ESLint 检查
-npm run lint:fix       # ESLint 自动修复
+pnpm lint           # Biome 检查（lint + format）
+pnpm lint:fix       # Biome 自动修复
 ```
 
-**注意**：本项目没有配置测试框架。
+**注意**：本项目没有配置测试框架。`package.json` 的 `build` 脚本仍使用 `npm run` 语法，这是因为它是原始模板的遗留，实际执行时 pnpm 也能正确解析。
 
 ### 加载扩展进行调试
 
@@ -119,6 +125,8 @@ source/
 
 使用 **SCSS + CSS Modules**。组件样式文件命名为 `ComponentName.module.scss`，导入后得到一个类名映射对象。全局样式在 [source/styles/](source/styles/) 中定义。
 
+全局 CSS reset 通过 `advanced-css-reset` 包提供，在 [source/styles/_reset.scss](source/styles/_reset.scss) 中导入，被 `Popup` 和 `Options` 的 SCSS 模块引用。
+
 ### TypeScript 配置
 
 - `tsconfig.json` 继承 `@abhijithvijayan/tsconfig`
@@ -126,10 +134,14 @@ source/
 - 模块解析：`"moduleResolution": "bundler"`
 - 仅包含 `source` 目录
 
-### ESLint 配置
+### Biome 配置
 
-使用 ESLint 9 flat config（[eslint.config.mjs](eslint.config.mjs)），继承 `@abhijithvijayan/eslint-config` 的 node、typescript、react 预设。部分规则已覆盖：
+使用 Biome 2.x（[biome.json](biome.json)）同时处理 lint 和 format：
 
-- `no-console`：关闭（扩展开发中需要日志）
-- `react/react-in-jsx-scope`：关闭（使用 React 19 自动运行时）
-- `react/jsx-props-no-spreading`：关闭
+- `suspicious/noConsole`：`off`（扩展开发中需要日志）
+- `a11y/noSvgWithoutTitle`：`off`
+- 引号风格：单引号
+- 缩进：2 spaces（与 `.editorconfig` 一致）
+- 忽略 `.gitignore` 中定义的文件，以及 `*.js`、`*.mjs`、`vite.config.ts`
+
+**注意**：Biome 的规则集小于 ESLint，缺失的规则包括 `jsx-a11y`、`import-x`、`eslint-plugin-n`、 `@typescript-eslint/no-explicit-any` 等。
