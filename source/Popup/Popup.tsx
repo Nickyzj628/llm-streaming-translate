@@ -26,21 +26,21 @@
  *       browser.runtime.sendMessage() sends to background script
  */
 
-import {useEffect, useState} from 'react';
-import type {FC} from 'react';
-import browser, {Tabs} from 'webextension-polyfill';
-import {getStorage} from '../utils/storage';
-import {
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
+import browser, { type Tabs } from 'webextension-polyfill';
+import type {
   PageInfo,
   PageInfoResponseMessage,
   VisitCountResponseMessage,
 } from '../types/messages';
-import {TabInfo} from './components/TabInfo/TabInfo';
-import {FooterActions} from './components/FooterActions/FooterActions';
+import { getStorage } from '../utils/storage';
+import { FooterActions } from './components/FooterActions/FooterActions';
+import { TabInfo } from './components/TabInfo/TabInfo';
 import styles from './Popup.module.scss';
 
 function openWebPage(url: string): Promise<Tabs.Tab> {
-  return browser.tabs.create({url});
+  return browser.tabs.create({ url });
 }
 
 interface TabData {
@@ -57,7 +57,7 @@ const Popup: FC = () => {
 
   useEffect(() => {
     // Get current tab info
-    browser.tabs.query({active: true, currentWindow: true}).then((tabs) => {
+    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
       const tab = tabs[0];
       if (tab) {
         setTabInfo({
@@ -69,7 +69,7 @@ const Popup: FC = () => {
         // Request page info from content script
         if (tab.id) {
           browser.tabs
-            .sendMessage(tab.id, {type: 'GET_PAGE_INFO'})
+            .sendMessage(tab.id, { type: 'GET_PAGE_INFO' })
             .then((response: unknown) => {
               const res = response as PageInfoResponseMessage;
               if (res?.data) {
@@ -85,7 +85,7 @@ const Popup: FC = () => {
 
     // Get visit count from background script
     browser.runtime
-      .sendMessage({type: 'GET_VISIT_COUNT'})
+      .sendMessage({ type: 'GET_VISIT_COUNT' })
       .then((response: unknown) => {
         const res = response as VisitCountResponseMessage;
         if (res?.count !== undefined) {
@@ -97,7 +97,7 @@ const Popup: FC = () => {
       });
 
     // Get username from storage
-    getStorage(['username']).then(({username: storedUsername}) => {
+    getStorage(['username']).then(({ username: storedUsername }) => {
       setUsername(storedUsername);
     });
   }, []);
@@ -164,7 +164,7 @@ const Popup: FC = () => {
         }
         onGitHub={(): Promise<Tabs.Tab> =>
           openWebPage(
-            'https://github.com/abhijithvijayan/web-extension-starter'
+            'https://github.com/abhijithvijayan/web-extension-starter',
           )
         }
         onSupport={(): Promise<Tabs.Tab> =>

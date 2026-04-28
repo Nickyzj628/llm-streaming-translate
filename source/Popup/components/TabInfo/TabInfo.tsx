@@ -1,6 +1,6 @@
-import type {FC} from 'react';
-import {Card} from '../../../components/Card/Card';
-import {Button} from '../../../components/Button/Button';
+import type { FC } from 'react';
+import { Button } from '../../../components/Button/Button';
+import { Card } from '../../../components/Card/Card';
 import styles from './TabInfo.module.scss';
 
 interface TabInfoProps {

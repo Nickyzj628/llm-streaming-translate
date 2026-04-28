@@ -22,12 +22,12 @@
  */
 
 import browser from 'webextension-polyfill';
-import {
+import type {
   ExtensionMessage,
   PageInfo,
   PageInfoResponseMessage,
 } from '../types/messages';
-import {getStorage} from '../utils/storage';
+import { getStorage } from '../utils/storage';
 
 // Collect page information (word count, links, images)
 function getPageInfo(): PageInfo {
@@ -61,7 +61,7 @@ browser.runtime.onMessage.addListener(
     }
 
     return undefined;
-  }
+  },
 );
 
 // Notify background script when page loads
@@ -86,11 +86,11 @@ if (document.readyState === 'complete') {
 }
 
 // Log when content script loads (if logging is enabled)
-getStorage(['enableLogging']).then(({enableLogging}) => {
+getStorage(['enableLogging']).then(({ enableLogging }) => {
   if (enableLogging) {
     console.log(
       '[Web Extension Starter] Content script loaded on:',
-      window.location.href
+      window.location.href,
     );
   }
 });

@@ -1,10 +1,10 @@
-import {useEffect, useState} from 'react';
-import type {FC} from 'react';
-import {getStorage, setStorage} from '../utils/storage';
-import {Button} from '../components/Button/Button';
-import {Input} from '../components/Input/Input';
-import {Checkbox} from '../components/Checkbox/Checkbox';
-import {GitHubIcon} from '../components/icons/GitHubIcon';
+import type { FC } from 'react';
+import { useEffect, useState } from 'react';
+import { Button } from '../components/Button/Button';
+import { Checkbox } from '../components/Checkbox/Checkbox';
+import { Input } from '../components/Input/Input';
+import { GitHubIcon } from '../components/icons/GitHubIcon';
+import { getStorage, setStorage } from '../utils/storage';
 import styles from './Options.module.scss';
 
 const Options: FC = () => {
@@ -21,7 +21,7 @@ const Options: FC = () => {
 
   const handleSave = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
-    await setStorage({username, enableLogging});
+    await setStorage({ username, enableLogging });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

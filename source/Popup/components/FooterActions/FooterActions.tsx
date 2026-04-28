@@ -1,8 +1,8 @@
-import type {FC} from 'react';
-import {Button} from '../../../components/Button/Button';
-import {SettingsIcon} from '../../../components/icons/SettingsIcon';
-import {GitHubIcon} from '../../../components/icons/GitHubIcon';
-import {HeartIcon} from '../../../components/icons/HeartIcon';
+import type { FC } from 'react';
+import { Button } from '../../../components/Button/Button';
+import { GitHubIcon } from '../../../components/icons/GitHubIcon';
+import { HeartIcon } from '../../../components/icons/HeartIcon';
+import { SettingsIcon } from '../../../components/icons/SettingsIcon';
 import styles from './FooterActions.module.scss';
 
 interface FooterActionsProps {
