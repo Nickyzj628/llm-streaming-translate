@@ -1,96 +1,98 @@
-/**
- * Content Script
- *
- * This script is injected into every web page that matches the patterns
- * defined in manifest.json's content_scripts section.
- *
- * Communication Flow:
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │                         CONTENT SCRIPT                              │
- * │                                                                     │
- * │  1. Page loads → Collects page stats → Sends PAGE_VISITED to       │
- * │     background script                                               │
- * │                                                                     │
- * │  2. Popup requests GET_PAGE_INFO → Content script responds with    │
- * │     PAGE_INFO_RESPONSE containing current page stats               │
- * └─────────────────────────────────────────────────────────────────────┘
- *
- * Message Types:
- * - PAGE_VISITED (outgoing to background): Notify that a page was loaded
- * - GET_PAGE_INFO (incoming from popup): Request for current page stats
- * - PAGE_INFO_RESPONSE (outgoing to popup): Response with page stats
- */
-
 import browser from 'webextension-polyfill';
-import type {
-  ExtensionMessage,
-  PageInfo,
-  PageInfoResponseMessage,
-} from '../types/messages';
-import { getStorage } from '../utils/storage';
+import {
+  hide as hideButton,
+  isButtonElement,
+  onClick,
+  show as showButton,
+} from './FloatingButton';
 
-// Collect page information (word count, links, images)
-function getPageInfo(): PageInfo {
-  const bodyText = document.body?.innerText || '';
-  const wordCount = bodyText
-    .split(/\s+/)
-    .filter((word) => word.length > 0).length;
-  const linkCount = document.querySelectorAll('a').length;
-  const imageCount = document.querySelectorAll('img').length;
+let isTranslating = false;
 
-  return {
-    url: window.location.href,
-    title: document.title,
-    wordCount,
-    linkCount,
-    imageCount,
-    timestamp: Date.now(),
-  };
+function getSelectedText(): string {
+  const selection = window.getSelection();
+  return selection ? selection.toString().trim() : '';
 }
 
-// Listen for messages from popup or background
-browser.runtime.onMessage.addListener(
-  (message: unknown): Promise<PageInfoResponseMessage> | undefined => {
-    const msg = message as ExtensionMessage;
+function handleMouseUp(e: MouseEvent): void {
+  if (isButtonElement(e.target as Node)) return;
 
-    if (msg.type === 'GET_PAGE_INFO') {
-      return Promise.resolve({
-        type: 'PAGE_INFO_RESPONSE',
-        data: getPageInfo(),
-      });
+  setTimeout(() => {
+    if (isTranslating) return;
+
+    const selectedText = getSelectedText();
+    if (selectedText.length > 0) {
+      showButton(e.clientX, e.clientY);
+      onClick(() => startTranslate(selectedText));
+    } else {
+      hideButton();
     }
-
-    return undefined;
-  },
-);
-
-// Notify background script when page loads
-function notifyPageVisit(): void {
-  const pageInfo = getPageInfo();
-
-  browser.runtime
-    .sendMessage({
-      type: 'PAGE_VISITED',
-      data: pageInfo,
-    })
-    .catch(() => {
-      // Background script might not be ready yet, ignore error
-    });
+  }, 50);
 }
 
-// Wait for page to fully load before collecting info
-if (document.readyState === 'complete') {
-  notifyPageVisit();
-} else {
-  window.addEventListener('load', notifyPageVisit);
-}
-
-// Log when content script loads (if logging is enabled)
-getStorage(['enableLogging']).then(({ enableLogging }) => {
-  if (enableLogging) {
-    console.log(
-      '[Web Extension Starter] Content script loaded on:',
-      window.location.href,
-    );
+function handleSelectionChange(): void {
+  if (isTranslating) return;
+  if (getSelectedText().length === 0) {
+    hideButton();
   }
-});
+}
+
+function startTranslate(text: string): void {
+  if (isTranslating) return;
+
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+
+  // 删除选区原文，插入空占位 span 用于接收流式译文
+  range.deleteContents();
+  const placeholder = document.createElement('span');
+  placeholder.textContent = '';
+  range.insertNode(placeholder);
+  selection.removeAllRanges();
+
+  isTranslating = true;
+  hideButton();
+
+  let isFinished = false;
+  const port = browser.runtime.connect({ name: 'stream-translate' });
+
+  port.onMessage.addListener((message: unknown) => {
+    const msg = message as {
+      type: string;
+      chunk?: string;
+      error?: string;
+    };
+
+    if (msg.type === 'CHUNK' && msg.chunk) {
+      placeholder.textContent += msg.chunk;
+    } else if (msg.type === 'DONE') {
+      unwrapPlaceholder(placeholder);
+      finish();
+    } else if (msg.type === 'ERROR') {
+      console.error('[LLM Translate] Translation failed:', msg.error);
+      placeholder.textContent = text; // 出错时恢复原文
+      unwrapPlaceholder(placeholder);
+      finish();
+    }
+  });
+
+  port.postMessage({ type: 'START', text });
+
+  function finish(): void {
+    if (isFinished) return;
+    isFinished = true;
+    isTranslating = false;
+    port.disconnect();
+  }
+}
+
+function unwrapPlaceholder(placeholder: HTMLSpanElement): void {
+  const parent = placeholder.parentNode;
+  if (!parent) return;
+  const textNode = document.createTextNode(placeholder.textContent || '');
+  parent.replaceChild(textNode, placeholder);
+}
+
+document.addEventListener('mouseup', handleMouseUp);
+document.addEventListener('selectionchange', handleSelectionChange);

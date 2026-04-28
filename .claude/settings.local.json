@@ -4,7 +4,10 @@
       "Bash(pnpm --version)",
       "Bash(pnpm install *)",
       "Bash(pnpm biome *)",
-      "Bash(pnpm why *)"
+      "Bash(pnpm why *)",
+      "Bash(pnpm build:firefox)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm build:chrome)"
     ]
   }
 }

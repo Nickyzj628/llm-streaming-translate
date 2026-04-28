@@ -32,9 +32,11 @@
 import browser from 'webextension-polyfill';
 import type {
   ExtensionMessage,
+  StreamTranslatePortMessage,
   VisitCountResponseMessage,
 } from '../types/messages';
 import { getStorage, setStorage } from '../utils/storage';
+import { streamTranslateOverPort } from './StreamTranslator';
 
 browser.runtime.onInstalled.addListener((): void => {
   console.log('Extension installed');
@@ -73,3 +75,15 @@ browser.runtime.onMessage.addListener(
     return undefined;
   },
 );
+
+// Handle streaming translation via long-lived port connection
+browser.runtime.onConnect.addListener((port) => {
+  if (port.name !== 'stream-translate') return;
+
+  port.onMessage.addListener((message: unknown) => {
+    const msg = message as StreamTranslatePortMessage;
+    if (msg.type === 'START') {
+      streamTranslateOverPort(msg.text, port);
+    }
+  });
+});

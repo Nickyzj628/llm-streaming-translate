@@ -17,7 +17,9 @@
 
   "optional_permissions": [],
 
-  "__chrome__host_permissions": [],
+  "__chrome__host_permissions": ["https://api.deepseek.com/*"],
+
+  "__firefox__host_permissions": ["https://api.deepseek.com/*"],
 
   "__chrome__optional_host_permissions": ["http://*/*", "https://*/*"],
 

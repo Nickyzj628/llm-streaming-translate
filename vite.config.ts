@@ -1,4 +1,4 @@
-import {defineConfig, build} from 'vite';
+import {defineConfig, build, loadEnv} from 'vite';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import process from 'node:process';
@@ -15,6 +15,7 @@ function buildIIFEScripts(options: {
   scripts: {name: string; entry: string}[];
   outDir: string;
   isDevelopment: boolean;
+  define?: Record<string, string>;
 }): Plugin {
   return {
     name: 'build-iife-scripts',
@@ -22,6 +23,7 @@ function buildIIFEScripts(options: {
       for (const script of options.scripts) {
         await build({
           configFile: false,
+          define: options.define,
           build: {
             write: true,
             outDir: options.outDir,
@@ -53,6 +55,7 @@ export default defineConfig(({ mode }) => {
 	const sourcePath = path.resolve(__dirname, 'source');
 	const destPath = path.resolve(__dirname, 'extension');
 	const targetBrowser = process.env.TARGET_BROWSER || 'chrome';
+	const env = loadEnv(mode, process.cwd(), 'VITE');
 
 	const getOutDir = () => path.resolve(destPath, targetBrowser);
 
@@ -87,6 +90,7 @@ export default defineConfig(({ mode }) => {
 		define: {
 			__DEV__: isDevelopment,
 			__TARGET_BROWSER__: JSON.stringify(targetBrowser),
+			'import.meta.env.VITE_DEEPSEEK_API_KEY': JSON.stringify(env.VITE_DEEPSEEK_API_KEY || ''),
 		},
 
 		plugins: [
@@ -121,6 +125,9 @@ export default defineConfig(({ mode }) => {
 				],
 				outDir: getOutDir(),
 				isDevelopment,
+				define: {
+					'import.meta.env.VITE_DEEPSEEK_API_KEY': JSON.stringify(env.VITE_DEEPSEEK_API_KEY || ''),
+				},
 			}),
 
 			!isDevelopment &&
