@@ -5,8 +5,13 @@ import {
   onClick,
   show as showButton,
 } from './FloatingButton';
+import {
+  createTranslatePopup,
+  type TranslatePopupController,
+} from './TranslatePopup';
 
 let isTranslating = false;
+let currentPopup: TranslatePopupController | null = null;
 
 function getSelectedText(): string {
   const selection = window.getSelection();
@@ -17,7 +22,10 @@ function handleMouseUp(e: MouseEvent): void {
   if (isButtonElement(e.target as Node)) return;
 
   setTimeout(() => {
-    if (isTranslating) return;
+    if (isTranslating) {
+      currentPopup?.hide();
+      isTranslating = false;
+    }
 
     const selectedText = getSelectedText();
     if (selectedText.length > 0) {
@@ -37,22 +45,23 @@ function handleSelectionChange(): void {
 }
 
 function startTranslate(text: string): void {
-  if (isTranslating) return;
+  if (isTranslating) {
+    currentPopup?.hide();
+    isTranslating = false;
+  }
 
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) return;
 
   const range = selection.getRangeAt(0);
-
-  // 删除选区原文，插入空占位 span 用于接收流式译文
-  range.deleteContents();
-  const placeholder = document.createElement('span');
-  placeholder.textContent = '';
-  range.insertNode(placeholder);
+  const targetRect = range.getBoundingClientRect();
   selection.removeAllRanges();
 
   isTranslating = true;
   hideButton();
+
+  currentPopup = createTranslatePopup();
+  currentPopup.show(targetRect);
 
   let isFinished = false;
   const port = browser.runtime.connect({ name: 'stream-translate' });
@@ -65,14 +74,12 @@ function startTranslate(text: string): void {
     };
 
     if (msg.type === 'CHUNK' && msg.chunk) {
-      placeholder.textContent += msg.chunk;
+      currentPopup?.appendChunk(msg.chunk);
     } else if (msg.type === 'DONE') {
-      unwrapPlaceholder(placeholder);
       finish();
     } else if (msg.type === 'ERROR') {
       console.error('[LLM Translate] Translation failed:', msg.error);
-      placeholder.textContent = text; // 出错时恢复原文
-      unwrapPlaceholder(placeholder);
+      currentPopup?.setError(msg.error || '未知错误');
       finish();
     }
   });
@@ -85,13 +92,6 @@ function startTranslate(text: string): void {
     isTranslating = false;
     port.disconnect();
   }
-}
-
-function unwrapPlaceholder(placeholder: HTMLSpanElement): void {
-  const parent = placeholder.parentNode;
-  if (!parent) return;
-  const textNode = document.createTextNode(placeholder.textContent || '');
-  parent.replaceChild(textNode, placeholder);
 }
 
 document.addEventListener('mouseup', handleMouseUp);

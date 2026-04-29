@@ -7,7 +7,8 @@
       "Bash(pnpm why *)",
       "Bash(pnpm build:firefox)",
       "Bash(pnpm lint *)",
-      "Bash(pnpm build:chrome)"
+      "Bash(pnpm build:chrome)",
+      "Bash(pnpm lint:fix)"
     ]
   }
 }
