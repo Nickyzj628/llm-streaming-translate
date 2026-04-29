@@ -19,7 +19,7 @@ export const TabInfo: FC<TabInfoProps> = ({
   const getInitial = (text: string): string => text.charAt(0).toUpperCase();
 
   return (
-    <Card title="Current Tab">
+    <Card title="当前标签页">
       <div className={styles.content}>
         {favIconUrl ? (
           <img src={favIconUrl} alt="" className={styles.favicon} />
@@ -32,7 +32,7 @@ export const TabInfo: FC<TabInfoProps> = ({
         </div>
       </div>
       <Button variant="secondary" fullWidth onClick={onReload}>
-        Reload Tab
+        刷新标签页
       </Button>
     </Card>
   );

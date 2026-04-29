@@ -24,7 +24,7 @@ export const FooterActions: FC<FooterActionsProps> = ({
       onClick={onSettings}
     >
       <SettingsIcon />
-      <span>Settings</span>
+      <span>设置</span>
     </Button>
     <Button
       variant="github"
@@ -42,7 +42,7 @@ export const FooterActions: FC<FooterActionsProps> = ({
       onClick={onSupport}
     >
       <HeartIcon />
-      <span>Support</span>
+      <span>支持</span>
     </Button>
   </div>
 );

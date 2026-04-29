@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Sample WebExtension",
+  "name": "LLM Streaming Translator",
   "version": "0.0.0",
 
   "icons": {
@@ -9,9 +9,9 @@
     "48": "assets/icons/favicon-48.png",
     "128": "assets/icons/favicon-128.png"
   },
-  "description": "Sample description",
+  "description": "基于大语言模型的网页划词翻译扩展",
   "homepage_url": "https://github.com/abhijithvijayan/web-extension-starter",
-  "short_name": "Sample Name",
+  "short_name": "LLM Streaming Translator",
 
   "permissions": ["activeTab", "storage"],
 
@@ -52,7 +52,7 @@
       "48": "assets/icons/favicon-48.png",
       "128": "assets/icons/favicon-128.png"
     },
-    "default_title": "tiny title"
+    "default_title": "LLM Streaming Translator"
   },
 
   "__chrome__options_page": "Options/options.html",

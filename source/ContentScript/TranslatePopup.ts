@@ -48,7 +48,7 @@ function createPopupElement(): PopoverHTMLElement {
     white-space: pre-wrap;
     word-break: break-word;
     overflow-y: auto;
-    max-height: ${POPUP_MAX_HEIGHT - 32}px;
+    scrollbar-gutter: stable;
   `;
 
   el.appendChild(content);
@@ -57,21 +57,47 @@ function createPopupElement(): PopoverHTMLElement {
 
 function positionPopup(popup: HTMLElement, targetRect: DOMRect): void {
   const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
 
   let left = targetRect.left + targetRect.width / 2 - POPUP_WIDTH / 2;
   left = Math.max(GAP, Math.min(left, viewportWidth - POPUP_WIDTH - GAP));
 
+  const popupHeight = popup.getBoundingClientRect().height;
+
+  const spaceAbove = targetRect.top - GAP;
+  const spaceBelow = viewportHeight - targetRect.bottom - GAP;
+
   let top: number;
-  if (targetRect.top > POPUP_MIN_HEIGHT + GAP * 2) {
+  let maxHeight: number;
+
+  if (spaceAbove >= popupHeight && spaceAbove >= spaceBelow) {
     top = targetRect.top - GAP;
     popup.style.transform = 'translateY(-100%)';
+    maxHeight = Math.min(POPUP_MAX_HEIGHT, spaceAbove);
+  } else if (spaceBelow >= popupHeight) {
+    top = targetRect.bottom + GAP;
+    popup.style.transform = 'translateY(0)';
+    maxHeight = Math.min(POPUP_MAX_HEIGHT, spaceBelow);
+  } else if (spaceAbove > spaceBelow) {
+    top = targetRect.top - GAP;
+    popup.style.transform = 'translateY(-100%)';
+    maxHeight = Math.max(POPUP_MIN_HEIGHT, spaceAbove);
   } else {
     top = targetRect.bottom + GAP;
     popup.style.transform = 'translateY(0)';
+    maxHeight = Math.max(POPUP_MIN_HEIGHT, spaceBelow);
   }
 
   popup.style.left = `${left}px`;
   popup.style.top = `${top}px`;
+  popup.style.maxHeight = `${maxHeight}px`;
+
+  const content = popup.querySelector(
+    '#llm-translate-popup-content',
+  ) as HTMLElement | null;
+  if (content) {
+    content.style.maxHeight = `${maxHeight - 32}px`;
+  }
 }
 
 export interface TranslatePopupController {
@@ -85,6 +111,8 @@ export function createTranslatePopup(): TranslatePopupController {
   let popup: PopoverHTMLElement | null = null;
   let contentEl: HTMLElement | null = null;
   let outsideClickHandler: ((e: MouseEvent) => void) | null = null;
+  let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+  let lastTargetRect: DOMRect | null = null;
 
   function ensureElements(): void {
     const existing = document.getElementById(
@@ -127,8 +155,28 @@ export function createTranslatePopup(): TranslatePopupController {
     }
   }
 
+  function attachKeydownListener(): void {
+    if (keydownHandler) return;
+
+    keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        hide();
+      }
+    };
+
+    document.addEventListener('keydown', keydownHandler);
+  }
+
+  function detachKeydownListener(): void {
+    if (keydownHandler) {
+      document.removeEventListener('keydown', keydownHandler);
+      keydownHandler = null;
+    }
+  }
+
   function show(targetRect: DOMRect): void {
     hide();
+    lastTargetRect = targetRect;
     ensureElements();
     if (!popup || !contentEl) return;
 
@@ -140,10 +188,13 @@ export function createTranslatePopup(): TranslatePopupController {
     }
 
     attachOutsideClickListener();
+    attachKeydownListener();
   }
 
   function hide(): void {
     detachOutsideClickListener();
+    detachKeydownListener();
+    lastTargetRect = null;
 
     const existing = document.getElementById(
       POPUP_ID,
@@ -160,8 +211,11 @@ export function createTranslatePopup(): TranslatePopupController {
   }
 
   function appendChunk(chunk: string): void {
-    if (!contentEl) return;
+    if (!contentEl || !popup) return;
     contentEl.textContent += chunk;
+    if (lastTargetRect) {
+      positionPopup(popup, lastTargetRect);
+    }
   }
 
   function setError(error: string): void {

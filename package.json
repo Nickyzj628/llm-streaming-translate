@@ -1,7 +1,7 @@
 {
-  "name": "web-extension-starter",
+  "name": "llm-streaming-translator",
   "version": "3.0.0",
-  "description": "Web extension starter using react and typescript",
+  "description": "基于大语言模型的网页划词翻译扩展",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "repository": "https://github.com/abhijithvijayan/web-extension-starter.git",

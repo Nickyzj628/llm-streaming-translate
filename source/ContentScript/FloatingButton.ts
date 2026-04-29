@@ -5,15 +5,20 @@ let currentButton: HTMLElement | null = null;
 function generateSquirclePath(size: number, n: number): string {
   const center = size / 2;
   const segments = 64;
-  let path = `M ${center.toFixed(2)} 0`;
+  const exponent = 2 / n;
 
-  for (let i = 1; i <= segments; i++) {
+  // 起点在 theta = 0（右侧中点），确保路径只画完整一圈
+  const startX = center + center * Math.cos(0) ** exponent;
+  const startY = center + center * Math.sin(0) ** exponent;
+  let path = `M ${startX.toFixed(3)} ${startY.toFixed(3)}`;
+
+  for (let i = 1; i < segments; i++) {
     const theta = (Math.PI * 2 * i) / segments;
     const cosT = Math.cos(theta);
     const sinT = Math.sin(theta);
-    const x = center + center * Math.sign(cosT) * Math.abs(cosT) ** (2 / n);
-    const y = center + center * Math.sign(sinT) * Math.abs(sinT) ** (2 / n);
-    path += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
+    const x = center + center * Math.sign(cosT) * Math.abs(cosT) ** exponent;
+    const y = center + center * Math.sign(sinT) * Math.abs(sinT) ** exponent;
+    path += ` L ${x.toFixed(3)} ${y.toFixed(3)}`;
   }
 
   path += ' Z';
@@ -50,24 +55,28 @@ export function show(mouseX: number, mouseY: number): void {
   hide();
   ensureClipPath();
 
-  const button = document.createElement('div');
-  button.id = 'llm-translate-btn';
-  button.style.cssText = `
+  const wrapper = document.createElement('div');
+  wrapper.id = 'llm-translate-btn';
+  wrapper.style.cssText = `
     position: fixed;
     left: ${mouseX + 8}px;
     top: ${mouseY + 8}px;
     width: 36px;
     height: 36px;
-    background: #ffffff;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-    clip-path: url(#llm-squircle);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.18)) drop-shadow(0 0 0.5px rgba(0,0,0,0.12));
     cursor: pointer;
+    z-index: 999999;
+  `;
+
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    clip-path: url(#llm-squircle);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999999;
-    border: none;
-    padding: 0;
   `;
 
   const img = document.createElement('img');
@@ -75,18 +84,20 @@ export function show(mouseX: number, mouseY: number): void {
   img.style.width = '20px';
   img.style.height = '20px';
   img.style.pointerEvents = 'none';
-  button.appendChild(img);
+  inner.appendChild(img);
 
-  button.addEventListener('mousedown', (e) => {
+  wrapper.appendChild(inner);
+
+  wrapper.addEventListener('mousedown', (e) => {
     e.stopPropagation();
     e.preventDefault();
   });
-  button.addEventListener('mouseup', (e) => {
+  wrapper.addEventListener('mouseup', (e) => {
     e.stopPropagation();
   });
 
-  document.body.appendChild(button);
-  currentButton = button;
+  document.body.appendChild(wrapper);
+  currentButton = wrapper;
 }
 
 export function hide(): void {

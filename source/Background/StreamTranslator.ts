@@ -1,8 +1,6 @@
 import { parseServerSentEvents } from 'parse-sse';
 import type { StreamTranslatePortMessage } from '../types/messages';
-
-const API_URL = 'https://api.deepseek.com/chat/completions';
-const MODEL = 'deepseek-v4-flash';
+import { getStorage } from '../utils/storage';
 
 type Port = {
   postMessage(message: StreamTranslatePortMessage): void;
@@ -12,33 +10,60 @@ export async function streamTranslateOverPort(
   text: string,
   port: Port,
 ): Promise<void> {
-  const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY as string | undefined;
+  const { baseUrl, model, apiKey, body } = await getStorage([
+    'baseUrl',
+    'model',
+    'apiKey',
+    'body',
+  ]);
 
   if (!apiKey) {
     port.postMessage({
       type: 'ERROR',
-      error: 'API key not found. Please set VITE_DEEPSEEK_API_KEY in .env',
+      error: 'API Key 未配置，请在扩展选项中设置。',
     });
     return;
   }
 
+  const url = `${baseUrl.replace(/\/$/, '')}/chat/completions`;
+
+  const requestBody: Record<string, unknown> = {
+    model,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a professional, authentic machine translation engine.\nTranslate the Source Text provided by user into Chinese.',
+      },
+      {
+        role: 'user',
+        content: `Source Text: ${text}\nTranslated Text:`,
+      },
+    ],
+    stream: true,
+  };
+
+  if (body) {
+    try {
+      const customBody = JSON.parse(body) as Record<string, unknown>;
+      Object.assign(requestBody, customBody);
+    } catch {
+      port.postMessage({
+        type: 'ERROR',
+        error: '自定义请求体 JSON 格式无效，请检查 Body 字段。',
+      });
+      return;
+    }
+  }
+
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: `You are a professional, authentic machine translation engine.\nTranslate the Source Text below to Chinese.\nSource Text: ${text}\nTranslated Text:`,
-          },
-        ],
-        stream: true,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -66,7 +91,7 @@ export async function streamTranslateOverPort(
     port.postMessage({ type: 'DONE' });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error('[LLM Translate BG] Translation failed:', errorMessage);
+    console.error('[LLM Streaming Translator BG] 翻译失败：', errorMessage);
     port.postMessage({ type: 'ERROR', error: errorMessage });
   }
 }

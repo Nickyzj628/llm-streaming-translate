@@ -61,8 +61,8 @@ const Popup: FC = () => {
       const tab = tabs[0];
       if (tab) {
         setTabInfo({
-          title: tab.title || 'Unknown',
-          url: tab.url || 'Unknown',
+          title: tab.title || '未知',
+          url: tab.url || '未知',
           favIconUrl: tab.favIconUrl,
         });
 
@@ -116,8 +116,8 @@ const Popup: FC = () => {
   return (
     <section className={styles.popup}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Web Extension Starter</h1>
-        {username && <p className={styles.greeting}>Hello, {username}!</p>}
+        <h1 className={styles.title}>LLM Streaming Translator</h1>
+        {username && <p className={styles.greeting}>你好，{username}！</p>}
       </header>
 
       {tabInfo && (
@@ -134,19 +134,19 @@ const Popup: FC = () => {
       {/* Page Stats from Content Script */}
       {pageInfo && (
         <div className={styles.statsCard}>
-          <h3 className={styles.statsTitle}>Page Stats</h3>
+          <h3 className={styles.statsTitle}>页面统计</h3>
           <div className={styles.statsGrid}>
             <div className={styles.statItem}>
               <span className={styles.statValue}>{pageInfo.wordCount}</span>
-              <span className={styles.statLabel}>Words</span>
+              <span className={styles.statLabel}>字数</span>
             </div>
             <div className={styles.statItem}>
               <span className={styles.statValue}>{pageInfo.linkCount}</span>
-              <span className={styles.statLabel}>Links</span>
+              <span className={styles.statLabel}>链接数</span>
             </div>
             <div className={styles.statItem}>
               <span className={styles.statValue}>{pageInfo.imageCount}</span>
-              <span className={styles.statLabel}>Images</span>
+              <span className={styles.statLabel}>图片数</span>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ const Popup: FC = () => {
 
       {/* Visit Count from Background Script */}
       <div className={styles.visitCard}>
-        <span className={styles.visitLabel}>Pages tracked:</span>
+        <span className={styles.visitLabel}>已追踪页面：</span>
         <span className={styles.visitCount}>{visitCount}</span>
       </div>
 
