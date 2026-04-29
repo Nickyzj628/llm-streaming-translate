@@ -6,7 +6,7 @@
     "module": "ESNext",
     "noEmit": true,
 
-    "lib": ["dom", "dom.iterable", "ES2023"],
+    "lib": ["dom", "dom.iterable", "dom.asynciterable", "ES2023"],
 
     /* Bundler-specific settings */
     "moduleResolution": "bundler",

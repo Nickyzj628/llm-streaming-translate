@@ -1,3 +1,4 @@
+import { parseServerSentEvents } from 'parse-sse';
 import type { StreamTranslatePortMessage } from '../types/messages';
 
 const API_URL = 'https://api.deepseek.com/chat/completions';
@@ -46,36 +47,19 @@ export async function streamTranslateOverPort(
       );
     }
 
-    const reader = (response.body as ReadableStream<Uint8Array>).getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
+    for await (const event of parseServerSentEvents(response)) {
+      if (event.data === '[DONE]') {
+        continue;
+      }
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data: ')) continue;
-
-        const data = trimmed.slice(6);
-        if (data === '[DONE]') continue;
-
-        try {
-          const json = JSON.parse(data);
-          const content = json.choices?.[0]?.delta?.content as
-            | string
-            | undefined;
-          if (content) {
-            port.postMessage({ type: 'CHUNK', chunk: content });
-          }
-        } catch {
-          // ignore malformed SSE lines
+      try {
+        const json = JSON.parse(event.data);
+        const content = json.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          port.postMessage({ type: 'CHUNK', chunk: content });
         }
+      } catch {
+        // ignore malformed JSON in SSE data
       }
     }
 

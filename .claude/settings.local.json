@@ -8,7 +8,9 @@
       "Bash(pnpm build:firefox)",
       "Bash(pnpm lint *)",
       "Bash(pnpm build:chrome)",
-      "Bash(pnpm lint:fix)"
+      "Bash(pnpm lint:fix)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)"
     ]
   }
 }
