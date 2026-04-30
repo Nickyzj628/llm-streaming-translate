@@ -1,41 +1,35 @@
 @use "../../styles/variables";
 
-.wrapper {
-  /* margin removed — spacing is handled by the parent section */
-}
-
 .label {
   display: block;
   font-size: 13px;
-  font-weight: variables.$semibold;
-  margin-bottom: 10px;
-  color: variables.$black;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: variables.$medium;
+  margin-bottom: variables.$space2;
+  color: variables.$grey;
+  letter-spacing: -0.01em;
 }
 
 .input {
   width: 100%;
-  padding: 14px 16px;
-  font-size: 15px;
-  background-color: variables.$white;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: variables.$fontFamily;
+  background: variables.$white;
   color: variables.$black;
-  border: 2px solid variables.$border;
   border-radius: variables.$radiusMd;
-  transition: all 0.2s ease;
+  box-shadow: variables.$shadowBorder;
+  transition: box-shadow variables.$transitionBase;
   box-sizing: border-box;
 
   &:hover {
-    border-color: #cbd5e1;
+    box-shadow: variables.$shadowBorderHover;
   }
 
-  &:focus {
-    outline: none;
-    border-color: variables.$primary;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  &:focus-visible {
+    box-shadow: variables.$shadowFocus;
   }
 
   &::placeholder {
-    color: #94a3b8;
+    color: variables.$greyLight;
   }
 }

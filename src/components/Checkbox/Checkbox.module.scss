@@ -3,31 +3,30 @@
 .wrapper {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 16px;
-  background: variables.$greyWhite;
+  gap: variables.$space3;
+  padding: variables.$space3;
+  background: variables.$bgSubtle;
   border-radius: variables.$radiusMd;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
+  transition: box-shadow variables.$transitionBase;
+  box-shadow: variables.$shadowBorder;
 
   &:hover {
-    background: #eef2f7;
-    border-color: variables.$border;
+    box-shadow: variables.$shadowBorderHover;
   }
 }
 
 .checkbox {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin-top: 2px;
   cursor: pointer;
   accent-color: variables.$primary;
+  flex-shrink: 0;
 }
 
 .text {
   font-size: 14px;
   line-height: 1.5;
-  color: variables.$skyBlue;
-  font-weight: variables.$medium;
+  color: variables.$grey;
 }

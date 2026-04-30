@@ -4,11 +4,11 @@
 
 :global(body) {
   color: variables.$black;
-  background: linear-gradient(180deg, variables.$greyWhite 0%, #eef2f7 100%);
+  background: variables.$bg;
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 50px 20px;
+  padding: variables.$space12 variables.$space5;
   font-family: variables.$fontFamily;
 }
 
@@ -18,36 +18,35 @@
 }
 
 .header {
-  margin-bottom: 32px;
+  margin-bottom: variables.$space8;
   text-align: center;
 
   h1 {
-    font-size: 26px;
-    font-weight: variables.$bold;
-    margin-bottom: 10px;
-    background: linear-gradient(135deg, variables.$primary 0%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 28px;
+    font-weight: variables.$semibold;
+    margin-bottom: variables.$space2;
+    letter-spacing: -0.03em;
+    color: variables.$black;
+    text-wrap: balance;
   }
 
   p {
-    color: variables.$skyBlue;
-    font-size: 14px;
-    font-weight: variables.$medium;
+    color: variables.$grey;
+    font-size: 15px;
+    font-weight: variables.$regular;
+    letter-spacing: -0.01em;
   }
 }
 
 .form {
-  background: variables.$cardBg;
+  background: variables.$white;
   border-radius: variables.$radiusLg;
-  padding: 28px;
-  box-shadow: variables.$shadowLg;
-  border: 1px solid variables.$border;
+  padding: variables.$space6;
+  box-shadow: variables.$shadowElevated;
 }
 
 .section {
-  margin-bottom: 20px;
+  margin-bottom: variables.$space5;
 
   &:last-of-type {
     margin-bottom: 0;
@@ -55,19 +54,20 @@
 }
 
 .hint {
-  font-size: 12px;
-  color: variables.$skyBlue;
-  margin-top: 6px;
+  font-size: 13px;
+  color: variables.$grey;
+  margin-top: variables.$space2;
   margin-bottom: 0;
+  letter-spacing: -0.01em;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 28px;
-  padding-top: 24px;
-  border-top: 1px solid variables.$border;
+  gap: variables.$space3;
+  margin-top: variables.$space6;
+  padding-top: variables.$space5;
+  box-shadow: inset 0 1px 0 0 rgba(0, 0, 0, 0.06);
 }
 
 .status {
@@ -76,7 +76,7 @@
   font-weight: variables.$semibold;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: variables.$space2;
 
   &::before {
     content: "";
@@ -92,79 +92,74 @@
 .selectLabel {
   display: block;
   font-size: 13px;
-  font-weight: variables.$semibold;
-  margin-bottom: 10px;
-  color: variables.$black;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: variables.$medium;
+  margin-bottom: variables.$space2;
+  color: variables.$grey;
+  letter-spacing: -0.01em;
 }
 
 .select {
   flex: 1;
   min-width: 0;
-  padding: 14px 16px;
-  font-size: 15px;
-  font-family: inherit;
-  background-color: variables.$white;
+  padding: 12px 14px;
+  padding-right: 40px;
+  font-size: 16px;
+  font-family: variables.$fontFamily;
+  background: variables.$white;
   color: variables.$black;
-  border: 2px solid variables.$border;
   border-radius: variables.$radiusMd;
-  transition: all 0.2s ease;
+  box-shadow: variables.$shadowBorder;
+  transition: box-shadow variables.$transitionBase;
   box-sizing: border-box;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  padding-right: 40px;
-  cursor: pointer;
 
   &:hover {
-    border-color: #cbd5e1;
+    box-shadow: variables.$shadowBorderHover;
   }
 
-  &:focus {
-    outline: none;
-    border-color: variables.$primary;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  &:focus-visible {
+    box-shadow: variables.$shadowFocus;
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 }
 
 .textarea {
   width: 100%;
-  padding: 14px 16px;
-  font-size: 15px;
-  font-family: inherit;
-  background-color: variables.$white;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-family: variables.$fontFamily;
+  background: variables.$white;
   color: variables.$black;
-  border: 2px solid variables.$border;
   border-radius: variables.$radiusMd;
-  transition: all 0.2s ease;
+  box-shadow: variables.$shadowBorder;
+  transition: box-shadow variables.$transitionBase;
   box-sizing: border-box;
   resize: vertical;
 
   &:hover {
-    border-color: #cbd5e1;
+    box-shadow: variables.$shadowBorderHover;
   }
 
-  &:focus {
-    outline: none;
-    border-color: variables.$primary;
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+  &:focus-visible {
+    box-shadow: variables.$shadowFocus;
   }
 
   &::placeholder {
-    color: #94a3b8;
+    color: variables.$greyLight;
   }
 }
 
 .modelRow {
   display: flex;
-  gap: 12px;
+  gap: variables.$space3;
   align-items: stretch;
 
   > button {
@@ -173,24 +168,24 @@
 }
 
 .importExport {
-  margin-top: 24px;
-  background: variables.$cardBg;
+  margin-top: variables.$space5;
+  background: variables.$white;
   border-radius: variables.$radiusLg;
-  padding: 24px 28px;
-  box-shadow: variables.$shadowLg;
-  border: 1px solid variables.$border;
+  padding: variables.$space5 variables.$space6;
+  box-shadow: variables.$shadowElevated;
 
   h3 {
     font-size: 16px;
     font-weight: variables.$semibold;
-    margin: 0 0 16px;
+    margin: 0 0 variables.$space3;
     color: variables.$black;
+    letter-spacing: -0.02em;
   }
 }
 
 .importExportActions {
   display: flex;
-  gap: 12px;
+  gap: variables.$space3;
 }
 
 .hiddenInput {
@@ -202,9 +197,11 @@
     transform: scale(0);
     opacity: 0;
   }
+
   50% {
     transform: scale(1.2);
   }
+
   100% {
     transform: scale(1);
     opacity: 1;

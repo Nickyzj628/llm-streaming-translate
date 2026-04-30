@@ -1,26 +1,19 @@
 @use "../../styles/variables";
 
 .button {
-  padding: 11px 16px;
-  font-size: 13px;
-  font-weight: variables.$semibold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: variables.$space2;
+  font-family: variables.$fontFamily;
+  font-weight: variables.$medium;
   border: none;
   border-radius: variables.$radiusMd;
   cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: variables.$shadowMd;
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
+  white-space: nowrap;
+  user-select: none;
+  transition: box-shadow variables.$transitionBase,
+    transform variables.$transitionBase, background-color variables.$transitionBase;
 }
 
 .fullWidth {
@@ -28,47 +21,89 @@
 }
 
 .primary {
-  background: linear-gradient(135deg, variables.$primary 0%, variables.$primaryDark 100%);
+  background: variables.$primary;
   color: variables.$white;
+  box-shadow: variables.$shadowBorder;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    box-shadow: variables.$shadowFocus;
+  }
 }
 
 .secondary {
-  background: variables.$greyWhite;
+  background: variables.$white;
   color: variables.$black;
-  border: 1px solid variables.$border;
+  box-shadow: variables.$shadowBorder;
 
   &:hover {
-    background: #eef2f7;
+    background: variables.$bgSubtle;
+    transform: translateY(-1px);
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    box-shadow: variables.$shadowFocus;
   }
 }
 
 .settings {
-  background: linear-gradient(135deg, variables.$primary 0%, #8b5cf6 100%);
+  background: variables.$primary;
   color: variables.$white;
+  box-shadow: variables.$shadowBorder;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
 }
 
 .github {
-  background: linear-gradient(135deg, #24292e 0%, #1a1a1a 100%);
+  background: #24292e;
   color: variables.$white;
+  box-shadow: variables.$shadowBorder;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
 }
 
 .support {
-  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  background: #ff5b4f;
   color: variables.$white;
+  box-shadow: variables.$shadowBorder;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
 }
 
 .small {
-  padding: 12px 10px;
-  font-size: 12px;
+  padding: variables.$space2 variables.$space3;
+  font-size: 13px;
   gap: 6px;
 }
 
 .medium {
-  padding: 11px 16px;
-  font-size: 13px;
+  padding: 10px 16px;
+  font-size: 14px;
 }
 
 .large {
-  padding: 14px 28px;
+  padding: 12px 24px;
   font-size: 14px;
 }

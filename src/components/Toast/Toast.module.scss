@@ -10,9 +10,10 @@
   border-radius: variables.$radiusMd;
   font-size: 14px;
   font-weight: variables.$medium;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: variables.$shadowElevated;
   z-index: 9999;
-  animation: toastIn 0.3s ease;
+  letter-spacing: -0.01em;
+  animation: toastIn 0.25s ease;
 }
 
 .toastSuccess {
@@ -26,7 +27,7 @@
 @keyframes toastIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateX(-50%) translateY(-8px);
   }
 
   to {

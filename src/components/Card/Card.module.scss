@@ -1,29 +1,32 @@
 @use "../../styles/variables";
 
 .card {
-  background: variables.$cardBg;
+  background: variables.$white;
   border-radius: variables.$radiusLg;
-  padding: 18px;
-  box-shadow: variables.$shadowMd;
-  border: 1px solid variables.$border;
+  padding: variables.$space5;
+  box-shadow: variables.$shadowBorder;
+  transition: box-shadow variables.$transitionBase;
+
+  &:hover {
+    box-shadow: variables.$shadowBorderHover, variables.$shadowAmbient;
+  }
 }
 
 .large {
-  padding: 28px;
-  box-shadow: variables.$shadowLg;
+  padding: variables.$space6;
+  box-shadow: variables.$shadowElevated;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: variables.$space3;
 }
 
 .title {
-  font-size: 11px;
-  font-weight: variables.$bold;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: variables.$skyBlue;
+  font-size: 12px;
+  font-weight: variables.$semibold;
+  color: variables.$grey;
+  letter-spacing: -0.01em;
 }
