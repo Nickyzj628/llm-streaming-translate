@@ -7,7 +7,7 @@ export default defineConfig({
   outDir: 'extension',
   manifest: {
     name: 'LLM Streaming Translator',
-    description: '基于大语言模型的网页划词翻译扩展',
+    description: '基于大模型的网页划词流式翻译插件',
     permissions: ['activeTab', 'storage'],
     host_permissions: ['https://api.deepseek.com/*'],
     optional_host_permissions: ['http://*/*', 'https://*/*'],

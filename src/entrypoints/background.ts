@@ -8,7 +8,6 @@ export default defineBackground(() => {
   });
 
   // Firefox MV2 uses browser.browserAction, Chrome MV3 uses browser.action
-  // @ts-expect-error Firefox MV2 uses browserAction instead of action
   const actionApi = browser.action || browser.browserAction;
 
   actionApi?.onClicked?.addListener((): void => {

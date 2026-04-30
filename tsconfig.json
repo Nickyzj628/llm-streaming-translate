@@ -27,11 +27,14 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "useDefineForClassFields": true,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "stripInternal": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "globals.d.ts"]
+  "include": ["src", "globals.d.ts", ".wxt/types"]
 }

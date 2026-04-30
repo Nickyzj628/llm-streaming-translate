@@ -9,6 +9,34 @@ import type { StreamTranslatePortMessage } from '@/types/messages';
 import { getAllStorage, setStorage } from '@/utils/storage';
 import styles from './Options.module.scss';
 
+interface Preset {
+  name: string;
+  baseUrl: string;
+  model: string;
+  body: string;
+}
+
+const PRESETS: Preset[] = [
+  {
+    name: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com',
+    model: 'deepseek-v4-flash',
+    body: '{"thinking": {"type": "disabled"}}',
+  },
+  {
+    name: 'OpenRouter',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: '~openai/gpt-mini-latest',
+    body: '{"reasoning_effort": "minimal"}',
+  },
+  {
+    name: 'Google AI Studio',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    model: 'models/gemma-4-31b-it',
+    body: '{"reasoning_effort": "minimal"}',
+  },
+];
+
 const Options: Component = () => {
   const [baseUrl, setBaseUrl] = createSignal('');
   const [model, setModel] = createSignal('');
@@ -72,6 +100,20 @@ const Options: Component = () => {
       }
     });
   });
+
+  const handlePresetChange = (e: Event): void => {
+    const target = e.target as HTMLSelectElement;
+    const value = target.value;
+    if (!value) return;
+    const preset = PRESETS.find((p) => p.name === value);
+    if (!preset) return;
+    setBaseUrl(preset.baseUrl);
+    setModel(preset.model);
+    setBody(preset.body);
+    setApiKey('');
+    setModels([]);
+    target.value = '';
+  };
 
   const handleRefreshModels = (): void => {
     if (!baseUrl() || !apiKey()) {
@@ -204,13 +246,31 @@ const Options: Component = () => {
 
       <form onSubmit={handleSave} class={styles.form}>
         <div class={styles.section}>
+          <label for="preset" class={styles.selectLabel}>
+            预设
+          </label>
+          <select
+            id="preset"
+            name="preset"
+            class={styles.select}
+            style={{ width: '100%' }}
+            onChange={handlePresetChange}
+          >
+            <option value="">请选择预设</option>
+            <For each={PRESETS}>
+              {(preset) => <option value={preset.name}>{preset.name}</option>}
+            </For>
+          </select>
+        </div>
+
+        <div class={styles.section}>
           <Input
             label="API Base URL"
             id="baseUrl"
             name="baseUrl"
             placeholder="https://api.openai.com"
-            spellCheck={false}
-            autoComplete="off"
+            spellcheck={false}
+            autocomplete="off"
             value={baseUrl()}
             onInput={(e) => setBaseUrl(e.currentTarget.value)}
           />
@@ -226,8 +286,8 @@ const Options: Component = () => {
             name="apiKey"
             type="password"
             placeholder="sk-..."
-            spellCheck={false}
-            autoComplete="off"
+            spellcheck={false}
+            autocomplete="off"
             value={apiKey()}
             onInput={(e) => setApiKey(e.currentTarget.value)}
           />
@@ -277,9 +337,8 @@ const Options: Component = () => {
             id="body"
             name="body"
             class={styles.textarea}
-            placeholder='{"thinking": {"type": "disabled"}}'
-            spellCheck={false}
-            autoComplete="off"
+            spellcheck={false}
+            autocomplete="off"
             rows={4}
             value={body()}
             onInput={(e) => setBody(e.currentTarget.value)}

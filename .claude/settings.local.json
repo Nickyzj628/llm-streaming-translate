@@ -16,7 +16,8 @@
       "Bash(pnpm zip *)",
       "WebFetch(domain:wxt.dev)",
       "Bash(xargs grep *)",
-      "Bash(pnpm outdated *)"
+      "Bash(pnpm outdated *)",
+      "Bash(npx tsc *)"
     ]
   }
 }
