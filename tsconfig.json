@@ -16,5 +16,5 @@
     /* React JSX transform */
     "jsx": "react-jsx"
   },
-  "include": ["source"]
+  "include": ["source", "entrypoints", "globals.d.ts"]
 }

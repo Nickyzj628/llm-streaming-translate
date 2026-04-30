@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-
-import Options from './Options';
+import Options from '@/Options/Options';
 
 const container = document.getElementById('options-root');
 

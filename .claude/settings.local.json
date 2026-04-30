@@ -10,7 +10,10 @@
       "Bash(pnpm build:chrome)",
       "Bash(pnpm lint:fix)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "WebSearch",
+      "Bash(pnpm add *)",
+      "Bash(pnpm zip *)"
     ]
   }
 }

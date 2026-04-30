@@ -192,6 +192,7 @@ typings/
 extension/
 dist/
 .awcache
+.wxt/
 
 # yarn 2
 # https://github.com/yarnpkg/berry/issues/454#issuecomment-530312089
