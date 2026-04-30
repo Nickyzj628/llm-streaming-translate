@@ -1,12 +1,12 @@
 import type { ChangeEvent, FC, FormEvent } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import browser from 'webextension-polyfill';
-import { Button } from '../components/Button/Button';
-import { Input } from '../components/Input/Input';
-import { Toast } from '../components/Toast/Toast';
-import { useToast } from '../components/Toast/useToast';
-import type { StreamTranslatePortMessage } from '../types/messages';
-import { getAllStorage, setStorage } from '../utils/storage';
+import Button from '@/components/Button/Button';
+import Input from '@/components/Input/Input';
+import Toast from '@/components/Toast/Toast';
+import { useToast } from '@/hooks/useToast';
+import type { StreamTranslatePortMessage } from '@/types/messages';
+import { getAllStorage, setStorage } from '@/utils/storage';
 import styles from './Options.module.scss';
 
 const Options: FC = () => {

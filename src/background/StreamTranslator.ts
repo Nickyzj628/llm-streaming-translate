@@ -1,6 +1,6 @@
 import { parseServerSentEvents } from 'parse-sse';
-import type { StreamTranslatePortMessage } from '../types/messages';
-import { getStorage } from '../utils/storage';
+import type { StreamTranslatePortMessage } from '@/types/messages';
+import { getStorage } from '@/utils/storage';
 
 type Port = {
   postMessage(message: StreamTranslatePortMessage): void;

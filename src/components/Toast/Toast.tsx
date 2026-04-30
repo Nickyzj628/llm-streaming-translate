@@ -1,12 +1,12 @@
 import type { FC } from 'react';
+import type { ToastData } from '../../hooks/useToast';
 import styles from './Toast.module.scss';
-import type { ToastData } from './useToast';
 
 interface ToastProps {
   toast: ToastData | null;
 }
 
-export const Toast: FC<ToastProps> = ({ toast }) => {
+const Toast: FC<ToastProps> = ({ toast }) => {
   if (!toast) return null;
 
   return (
@@ -17,3 +17,5 @@ export const Toast: FC<ToastProps> = ({ toast }) => {
     </div>
   );
 };
+
+export default Toast;

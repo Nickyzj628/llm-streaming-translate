@@ -1,170 +1,64 @@
-<h1 align="center">🚀 web-extension-starter</h1>
-<p align="center">Web Extension starter to build "Write Once Run on Any Browser" extension</p>
-<div align="center">
-  <a href="https://github.com/abhijithvijayan/web-extension-starter/blob/master/LICENSE">
-    <img src="https://img.shields.io/github/license/abhijithvijayan/web-extension-starter.svg" alt="LICENSE" />
-  </a>
-  <a href="https://twitter.com/intent/tweet?text=Check%20out%20web-extension-starter%21%20by%20%40_abhijithv%0A%0AWeb%20Extension%20starter%20to%20build%20%22Write%20Once%20Run%20on%20Any%20Browser%22%20extension.%20https%3A%2F%2Fgithub.com%2Fabhijithvijayan%2Fweb-extension-starter%0A%0A%23javascript%20%23react%20%23typescript%20%23sass%20%23webextension%20%23chrome%20%23firefox%20%23opera">
-     <img src="https://img.shields.io/twitter/url/http/shields.io.svg?style=social" alt="TWEET" />
-  </a>
-</div>
-<h3 align="center">🙋‍♂️ Made by <a href="https://twitter.com/_abhijithv">@abhijithvijayan</a></h3>
-<p align="center">
-  Donate:
-  <a href="https://www.paypal.me/iamabhijithvijayan" target='_blank'><i><b>PayPal</b></i></a>,
-  <a href="https://www.patreon.com/abhijithvijayan" target='_blank'><i><b>Patreon</b></i></a>
-</p>
-<p align="center">
-  <a href='https://www.buymeacoffee.com/abhijithvijayan' target='_blank'>
-    <img height='36' style='border:0px;height:36px;' src='https://bmc-cdn.nyc3.digitaloceanspaces.com/BMC-button-images/custom_images/orange_img.png' border='0' alt='Buy Me a Coffee' />
-  </a>
-</p>
-<hr />
+# LLM Streaming Translator
 
-❤️ it? ⭐️ it on [GitHub](https://github.com/abhijithvijayan/web-extension-starter) or [Tweet](https://twitter.com/intent/tweet?text=Check%20out%20web-extension-starter%21%20by%20%40_abhijithv%0A%0AWeb%20Extension%20starter%20to%20build%20%22Write%20Once%20Run%20on%20Any%20Browser%22%20extension.%20https%3A%2F%2Fgithub.com%2Fabhijithvijayan%2Fweb-extension-starter%0A%0A%23javascript%20%23react%20%23typescript%20%23sass%20%23webextension%20%23chrome%20%23firefox%20%23opera) about it.
+基于大语言模型的网页划词翻译浏览器扩展。在网页上选中文本后，点击浮动按钮即可通过 LLM API 获得流式翻译结果。
 
-## Features
+## 功能
 
-- Cross Browser Support (Web-Extensions API)
-- Browser Tailored Manifest generation
-- Vite for fast builds and HMR
-- Automatic build on code changes
-- Auto packs browser specific build files
-- SASS/SCSS styling with CSS Modules
-- TypeScript by default
-- ES6 modules support
-- React 19 with automatic JSX runtime
-- ESLint 9 flat config with Prettier
+- 网页划词翻译：选中文本后显示浮动翻译按钮
+- 流式响应：翻译结果逐字显示，无需等待完整响应
+- 支持多种 LLM：通过 OpenAI 兼容 API 调用任意模型
+- 自定义请求体：可添加 temperature、system prompt 等参数
+- 配置导入导出：便于备份和迁移设置
 
-## Tech Stack
+## 技术栈
 
-- **Bundler**: [Vite](https://vitejs.dev/) 7
-- **UI**: [React](https://react.dev/) 19
-- **Language**: [TypeScript](https://www.typescriptlang.org/) 5.9
-- **Styling**: SCSS with CSS Modules
-- **Linting**: ESLint 9 (flat config) + Prettier
-- **Manifest**: [vite-plugin-wext-manifest](https://github.com/abhijithvijayan/vite-plugin-wext-manifest)
+- **框架**: [WXT](https://wxt.dev/) + [React](https://react.dev/) 19
+- **语言**: TypeScript
+- **样式**: SCSS + CSS Modules
+- **代码检查**: Biome
 
-## Browser Support
-
-This starter uses **Manifest V3** for all browsers.
-
-| [![Chrome](https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](/) | [![Firefox](https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](/) | [![Opera](https://raw.githubusercontent.com/alrra/browser-logos/master/src/opera/opera_48x48.png)](/) | [![Edge](https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png)](/) | [![Brave](https://raw.githubusercontent.com/alrra/browser-logos/master/src/brave/brave_48x48.png)](/) |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 88+ (Jan 2021)                                                                                | 112+ (Apr 2023)                                                                                  | 74+ (Chromium-based)                                                                       | 88+ (Chromium-based)                                                                    | Latest (Chromium-based)                                                                    |
-
-> **Note**: Firefox 112+ is required for Manifest V3 support with ES modules in background scripts.
->
-> Need to support older Firefox versions? See [Firefox MV2 Guide](docs/FIREFOX_MV2.md) for using Manifest V2 with Firefox.
-
-## Used by extensions in production that has over 100,000+ users.
-
-- [daily.dev](https://daily.dev) - [daily.dev extension](https://r.daily.dev/get)
-- [Jiffy Reader](https://chrome.google.com/webstore/detail/jiffy-reader/lljedihjnnjjefafchaljkhbpfhfkdic)
-- [kutt-extension](https://chrome.google.com/webstore/detail/kutt/pklakpjfiegjacoppcodencchehlfnpd)
-- [doubanIMDb](https://chrome.google.com/webstore/detail/doubanimdb/nfibbjnhkbjlgjaojglmmibdjicidini)
-
-## Use this template
-
-Create a new directory and run
-
-```
-curl -fsSL https://github.com/abhijithvijayan/web-extension-starter/archive/react-typescript-vite.tar.gz | tar -xz --strip-components=1
-```
-
-## 🚀 Quick Start
-
-Ensure you have [Node.js](https://nodejs.org) 20 or later installed.
-
-Then run the following:
+## 快速开始
 
 ```bash
-# Install dependencies
+# 安装依赖
 pnpm install
 
-# Start development server
-pnpm dev:chrome    # For Chrome
-pnpm dev:firefox   # For Firefox
+# 开发模式
+pnpm dev:chrome
+pnpm dev:firefox
 
-# Build for production
-pnpm build:chrome  # Build Chrome extension
-pnpm build:firefox # Build Firefox addon
-pnpm build         # Build for all browsers
+# 生产构建
+pnpm build:chrome
+pnpm build:firefox
+
+# ZIP 打包
+pnpm zip
 ```
 
-## Project Structure
+## 加载扩展
+
+- **Chrome**: 访问 `chrome://extensions`，开启开发者模式，点击"加载已解压的扩展程序"，选择 `extension/chrome-mv3-dev`（开发）或 `extension/chrome-mv3`（生产）
+- **Firefox**: 访问 `about:debugging`，选择"此 Firefox"，点击"临时加载附加组件"，选择 `extension/firefox-mv2/manifest.json`
+
+## 项目结构
 
 ```
-source/
-├── Background/        # Service worker (Chrome MV3) / Background script (Firefox)
-├── ContentScript/     # Content scripts (injected into web pages)
-├── Popup/             # Extension popup UI
-├── Options/           # Options page UI
-├── components/        # Shared React components
-├── styles/            # Global styles and variables
-├── types/             # TypeScript type definitions
-├── utils/             # Utility functions
-├── public/            # Static assets (icons, etc.)
-└── manifest.json      # Extension manifest template
+src/
+  entrypoints/         # WXT 入口文件
+    background.ts      # 后台脚本
+    content.ts         # 内容脚本
+    options/           # 设置页面
+  background/
+    StreamTranslator.ts # 流式翻译核心逻辑
+  content-script/
+    FloatingButton.ts   # 浮动翻译按钮
+    TranslatePopup.ts   # 翻译结果浮窗
+  options/
+    Options.tsx         # 设置页面组件
+  components/           # 共享组件（default export，支持 auto-import）
+  hooks/                # React hooks（支持 auto-import）
+  styles/               # 全局 SCSS 变量
+  types/                # TypeScript 类型定义
+  utils/                # 工具函数（支持 auto-import）
+public/                 # 静态资源
 ```
-
-## Development
-
-### Loading the Extension
-
-#### Chrome
-
-1. Navigate to `chrome://extensions`
-2. Enable "Developer mode"
-3. Click "Load unpacked"
-4. Select `extension/chrome` directory
-
-#### Firefox
-
-1. Navigate to `about:debugging`
-2. Click "This Firefox"
-3. Click "Load Temporary Add-on"
-4. Select `extension/firefox/manifest.json`
-
-### Content Scripts
-
-Content scripts are automatically bundled as IIFE (Immediately Invoked Function Expression) to ensure compatibility with the browser's content script execution environment, which doesn't support ES modules.
-
-### Browser-Specific Manifest
-
-The manifest uses vendor prefixes to generate browser-specific configurations:
-
-```json
-{
-  "__chrome__name": "My Chrome Extension",
-  "__firefox__name": "My Firefox Addon",
-  "__chrome|firefox__description": "Works on both!"
-}
-```
-
-See [vite-plugin-wext-manifest](https://github.com/abhijithvijayan/vite-plugin-wext-manifest) for more details.
-
-## Scripts
-
-| Script                | Description                         |
-| --------------------- | ----------------------------------- |
-| `pnpm dev:chrome`     | Start dev server for Chrome         |
-| `pnpm dev:firefox`    | Start dev server for Firefox        |
-| `pnpm build:chrome`   | Build production Chrome extension   |
-| `pnpm build:firefox`  | Build production Firefox addon      |
-| `pnpm build`          | Build for all browsers              |
-| `pnpm lint`           | Run Biome (lint + format)           |
-| `pnpm lint:fix`       | Run Biome with auto-fix             |
-
-## Linting & TypeScript Config
-
-- **Linting & Formatting**: [Biome](https://biomejs.dev/) 2.x — configured in `biome.json`
-- **TypeScript**: Shared configuration from [`@abhijithvijayan/tsconfig`](https://www.npmjs.com/package/@abhijithvijayan/tsconfig)
-
-## Bugs
-
-Please file an issue [here](https://github.com/abhijithvijayan/web-extension-starter/issues/new) for bugs, missing documentation, or unexpected behavior.
-
-## License
-
-MIT © [Abhijith Vijayan](https://abhijithvijayan.in)

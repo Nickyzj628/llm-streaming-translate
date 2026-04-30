@@ -13,7 +13,9 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebSearch",
       "Bash(pnpm add *)",
-      "Bash(pnpm zip *)"
+      "Bash(pnpm zip *)",
+      "WebFetch(domain:wxt.dev)",
+      "Bash(xargs grep *)"
     ]
   }
 }

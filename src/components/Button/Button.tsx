@@ -16,7 +16,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
-export const Button: FC<ButtonProps> = ({
+const Button: FC<ButtonProps> = ({
   variant = 'primary',
   size = 'medium',
   fullWidth = false,
@@ -40,3 +40,5 @@ export const Button: FC<ButtonProps> = ({
     </button>
   );
 };
+
+export default Button;

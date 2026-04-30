@@ -6,7 +6,7 @@ interface CheckboxProps
   label: string;
 }
 
-export const Checkbox: FC<CheckboxProps> = ({
+const Checkbox: FC<CheckboxProps> = ({
   label,
   id,
   checked,
@@ -25,3 +25,5 @@ export const Checkbox: FC<CheckboxProps> = ({
     <span className={styles.text}>{label}</span>
   </label>
 );
+
+export default Checkbox;

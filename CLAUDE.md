@@ -71,25 +71,30 @@ export default defineContentScript({
 ### 目录结构
 
 ```
-entrypoints/              # WXT 入口文件（background.ts / content.ts / options/）
-source/                   # 业务代码（被 WXT 构建系统编译）
-  Background/
+src/
+  entrypoints/            # WXT 入口文件（background.ts / content.ts / options/）
+  background/
     StreamTranslator.ts   # 流式翻译核心逻辑（调用 API、解析 SSE）
-  ContentScript/
+  content-script/
     FloatingButton.ts     # 浮动翻译按钮（超椭圆形状 SVG）
     TranslatePopup.ts     # 翻译结果浮窗（使用 Popover API，带自动定位）
-  Options/
+  options/
     Options.tsx           # 设置页面主组件
-  components/             # 共享 React 组件（含 SCSS Modules）
+  components/             # 共享 React 组件（含 SCSS Modules），default export 供 auto-import
+  hooks/                  # React hooks（auto-import 扫描）
   styles/                 # 全局 SCSS 变量和重置样式
   types/                  # TypeScript 类型定义
-  utils/                  # 工具函数（storage 封装等）
+  utils/                  # 工具函数（storage 封装等，auto-import 扫描）
 public/                   # 静态资源（图标等，直接复制到输出目录）
 ```
 
 ### 路径别名
 
-- `@/` → `source/` 目录
+- `@/` → `src/` 目录
+
+### Auto-imports
+
+WXT 通过 `unimport` 自动扫描 `src/components/`、`src/hooks/`、`src/utils/` 目录。组件、hooks 和工具函数使用 **default export** 时无需手动 `import` 即可直接使用（类型提示由 `.wxt/types/imports.d.ts` 提供）。目前项目已启用此机制，组件均改为 default export。
 
 ### Manifest 配置
 
@@ -105,13 +110,12 @@ Manifest 完全由 WXT 自动生成，配置在 [`wxt.config.ts`](wxt.config.ts)
 ```typescript
 // wxt.config.ts
 export default defineConfig({
-  srcDir: 'source',
-  entrypointsDir: '../entrypoints',
+  srcDir: 'src',
   manifest: { /* ... */ },
   vite: () => ({
     resolve: {
       alias: {
-        '@': path.resolve(import.meta.dirname, 'source'),
+        '@': path.resolve(import.meta.dirname, 'src'),
       },
     },
   }),
@@ -135,9 +139,9 @@ export default defineConfig({
                                                LLM API (SSE)
 ```
 
-1. **ContentScript** 监听网页上的 `mouseup` 和 `selectionchange` 事件，检测到文本选中后显示浮动翻译按钮（[`FloatingButton.ts`](source/ContentScript/FloatingButton.ts)）
-2. 用户点击按钮后，ContentScript 创建翻译结果浮窗（[`TranslatePopup.ts`](source/ContentScript/TranslatePopup.ts)），并通过 `browser.runtime.connect({ name: 'stream-translate' })` 建立长连接 Port
-3. **Background** 的 [`StreamTranslator.ts`](source/Background/StreamTranslator.ts) 接收 `START` 消息，调用 LLM API（OpenAI 兼容格式，使用 SSE 流式响应），通过 `parse-sse` 库解析事件流，将翻译片段通过 Port 回传
+1. **ContentScript** 监听网页上的 `mouseup` 和 `selectionchange` 事件，检测到文本选中后显示浮动翻译按钮（[`FloatingButton.ts`](src/content-script/FloatingButton.ts)）
+2. 用户点击按钮后，ContentScript 创建翻译结果浮窗（[`TranslatePopup.ts`](src/content-script/TranslatePopup.ts)），并通过 `browser.runtime.connect({ name: 'stream-translate' })` 建立长连接 Port
+3. **Background** 的 [`StreamTranslator.ts`](src/background/StreamTranslator.ts) 接收 `START` 消息，调用 LLM API（OpenAI 兼容格式，使用 SSE 流式响应），通过 `parse-sse` 库解析事件流，将翻译片段通过 Port 回传
 4. ContentScript 接收 `CHUNK` 消息逐字显示，接收 `DONE` 或 `ERROR` 结束翻译
 5. 点击扩展图标打开 **Options** 选项页面，用于配置 API Base URL、模型、API Key、自定义请求体等
 
@@ -149,7 +153,7 @@ export default defineConfig({
 - **Background → ContentScript**：通过同一 Port 发送 `CHUNK`（翻译片段）、`DONE`（完成）、`ERROR`（错误）消息
 - **Options 页面**：也使用同一 Port 机制进行"测试翻译"，验证配置是否正确
 
-所有消息类型定义在 [`source/types/messages.ts`](source/types/messages.ts) 中。
+所有消息类型定义在 [`src/types/messages.ts`](src/types/messages.ts) 中。
 
 ### 浏览器 API 兼容性
 
@@ -167,7 +171,7 @@ actionApi?.onClicked?.addListener(() => {
 
 ### 存储层
 
-使用 `browser.storage.local` 进行持久化存储，通过 [`source/utils/storage.ts`](source/utils/storage.ts) 封装：
+使用 `browser.storage.local` 进行持久化存储，通过 [`src/utils/storage.ts`](src/utils/storage.ts) 封装：
 
 ```typescript
 import { getStorage, setStorage, getAllStorage } from '@/utils/storage';
@@ -176,7 +180,7 @@ const { baseUrl, model, apiKey, body } = await getStorage(['baseUrl', 'model', '
 await setStorage({ apiKey: 'new key' });
 ```
 
-存储 Schema 定义在 [`source/types/storage.ts`](source/types/storage.ts) 中。核心配置字段：
+存储 Schema 定义在 [`src/types/storage.ts`](src/types/storage.ts) 中。核心配置字段：
 
 - `baseUrl`：API 端点（默认 `https://api.deepseek.com`）
 - `model`：模型名称（默认 `deepseek-chat`）
@@ -187,16 +191,16 @@ await setStorage({ apiKey: 'new key' });
 
 ### 样式
 
-使用 **SCSS + CSS Modules**。组件样式文件命名为 `ComponentName.module.scss`，导入后得到一个类名映射对象。全局样式在 [`source/styles/`](source/styles/) 中定义。
+使用 **SCSS + CSS Modules**。组件样式文件命名为 `ComponentName.module.scss`，导入后得到一个类名映射对象。全局样式在 [`src/styles/`](src/styles/) 中定义。
 
-全局 CSS reset 通过 `advanced-css-reset` 包提供，在 [`source/styles/_reset.scss`](source/styles/_reset.scss) 中导入。
+全局 CSS reset 通过 `advanced-css-reset` 包提供，在 [`src/styles/_reset.scss`](src/styles/_reset.scss) 中导入。
 
 ### TypeScript 配置
 
 - `tsconfig.json` 继承 `@abhijithvijayan/tsconfig`
 - JSX 转换：`"jsx": "react-jsx"`（React 19 自动运行时）
 - 模块解析：`"moduleResolution": "bundler"`
-- 包含 `source`、`entrypoints`、`globals.d.ts`
+- 包含 `src`、`globals.d.ts`
 
 ### Biome 配置
 

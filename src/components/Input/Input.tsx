@@ -5,7 +5,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-export const Input: FC<InputProps> = ({ label, id, className, ...props }) => (
+const Input: FC<InputProps> = ({ label, id, className, ...props }) => (
   <div className={styles.wrapper}>
     {label && (
       <label htmlFor={id} className={styles.label}>
@@ -19,3 +19,5 @@ export const Input: FC<InputProps> = ({ label, id, className, ...props }) => (
     />
   </div>
 );
+
+export default Input;

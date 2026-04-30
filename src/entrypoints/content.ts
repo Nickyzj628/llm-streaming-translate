@@ -4,11 +4,11 @@ import {
   isButtonElement,
   onClick,
   show as showButton,
-} from '@/ContentScript/FloatingButton';
+} from '@/content-script/FloatingButton';
 import {
   createTranslatePopup,
   type TranslatePopupController,
-} from '@/ContentScript/TranslatePopup';
+} from '@/content-script/TranslatePopup';
 
 export default defineContentScript({
   matches: ['http://*/*', 'https://*/*'],

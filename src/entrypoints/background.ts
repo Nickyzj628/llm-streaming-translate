@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill';
-import { streamTranslateOverPort } from '@/Background/StreamTranslator';
+import { streamTranslateOverPort } from '@/background/StreamTranslator';
 import type { StreamTranslatePortMessage } from '@/types/messages';
 
 export default defineBackground(() => {

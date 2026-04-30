@@ -8,7 +8,7 @@ interface CardProps {
   className?: string;
 }
 
-export const Card: FC<CardProps> = ({
+const Card: FC<CardProps> = ({
   title,
   size = 'default',
   children,
@@ -29,3 +29,5 @@ export const Card: FC<CardProps> = ({
     </div>
   );
 };
+
+export default Card;

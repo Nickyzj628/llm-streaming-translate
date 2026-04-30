@@ -2,9 +2,8 @@ import path from 'node:path';
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
-  srcDir: 'source',
+  srcDir: 'src',
   outDir: 'extension',
-  entrypointsDir: '../entrypoints',
   manifest: {
     name: 'LLM Streaming Translator',
     description: '基于大语言模型的网页划词翻译扩展',
@@ -24,7 +23,7 @@ export default defineConfig({
   vite: () => ({
     resolve: {
       alias: {
-        '@': path.resolve(import.meta.dirname, 'source'),
+        '@': path.resolve(import.meta.dirname, 'src'),
         '~': path.resolve(import.meta.dirname, 'node_modules'),
       },
     },

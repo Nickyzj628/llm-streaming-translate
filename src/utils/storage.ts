@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill';
-import { defaultStorage, type StorageSchema } from '../types/storage';
+import { defaultStorage, type StorageSchema } from '@/types/storage';
 
 export async function getStorage<K extends keyof StorageSchema>(
   keys: K[],

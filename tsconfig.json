@@ -1,20 +1,36 @@
 {
-  "extends": "@abhijithvijayan/tsconfig",
   "compilerOptions": {
-    /* Let Vite control the final JS output */
     "target": "ESNext",
     "module": "ESNext",
     "noEmit": true,
-
     "lib": ["dom", "dom.iterable", "dom.asynciterable", "ES2023"],
-
-    /* Bundler-specific settings */
     "moduleResolution": "bundler",
     "isolatedModules": true,
     "declaration": false,
+    "jsx": "react-jsx",
 
-    /* React JSX transform */
-    "jsx": "react-jsx"
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "useDefineForClassFields": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "stripInternal": true,
+    "noUncheckedSideEffectImports": true
   },
-  "include": ["source", "entrypoints", "globals.d.ts"]
+  "include": ["src", "globals.d.ts"]
 }
