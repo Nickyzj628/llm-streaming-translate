@@ -38,7 +38,6 @@ const PRESETS: Preset[] = [
 ];
 
 const Options: Component = () => {
-  const [sourceLang, setSourceLang] = createSignal('');
   const [targetLang, setTargetLang] = createSignal('');
   const [baseUrl, setBaseUrl] = createSignal('');
   const [model, setModel] = createSignal('');
@@ -93,7 +92,6 @@ const Options: Component = () => {
 
   onMount(() => {
     getAllStorage().then((result) => {
-      setSourceLang(result.sourceLang);
       setTargetLang(result.targetLang);
       setBaseUrl(result.baseUrl);
       setModel(result.model);
@@ -170,7 +168,6 @@ const Options: Component = () => {
   const handleSave = async (e: Event): Promise<void> => {
     e.preventDefault();
     await setStorage({
-      sourceLang: sourceLang(),
       targetLang: targetLang(),
       baseUrl: baseUrl(),
       model: model(),
@@ -217,10 +214,6 @@ const Options: Component = () => {
           model: parsed.model,
           apiKey: parsed.apiKey,
           body: parsed.body,
-          sourceLang:
-            typeof parsed.sourceLang === 'string'
-              ? parsed.sourceLang
-              : 'English',
           targetLang:
             typeof parsed.targetLang === 'string'
               ? parsed.targetLang
@@ -230,9 +223,6 @@ const Options: Component = () => {
         setModel(parsed.model);
         setApiKey(parsed.apiKey);
         setBody(parsed.body);
-        setSourceLang(
-          typeof parsed.sourceLang === 'string' ? parsed.sourceLang : 'English',
-        );
         setTargetLang(
           typeof parsed.targetLang === 'string' ? parsed.targetLang : 'Chinese',
         );
@@ -266,28 +256,16 @@ const Options: Component = () => {
 
       <form onSubmit={handleSave} class={styles.form}>
         <div class={styles.section}>
-          <div class={styles.langRow}>
-            <Input
-              label="源语言"
-              id="sourceLang"
-              name="sourceLang"
-              placeholder="English"
-              spellcheck={false}
-              autocomplete="off"
-              value={sourceLang()}
-              onInput={(e) => setSourceLang(e.currentTarget.value)}
-            />
-            <Input
-              label="目标语言"
-              id="targetLang"
-              name="targetLang"
-              placeholder="Chinese"
-              spellcheck={false}
-              autocomplete="off"
-              value={targetLang()}
-              onInput={(e) => setTargetLang(e.currentTarget.value)}
-            />
-          </div>
+          <Input
+            label="目标语言"
+            id="targetLang"
+            name="targetLang"
+            placeholder="Chinese"
+            spellcheck={false}
+            autocomplete="off"
+            value={targetLang()}
+            onInput={(e) => setTargetLang(e.currentTarget.value)}
+          />
           <p class={styles.hint}>可以任意输入语言名称，只要模型能够识别即可</p>
         </div>
 

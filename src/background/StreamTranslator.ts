@@ -10,15 +10,13 @@ export async function streamTranslateOverPort(
   text: string,
   port: Port,
 ): Promise<void> {
-  const { baseUrl, model, apiKey, body, sourceLang, targetLang } =
-    await getStorage([
-      'baseUrl',
-      'model',
-      'apiKey',
-      'body',
-      'sourceLang',
-      'targetLang',
-    ]);
+  const { baseUrl, model, apiKey, body, targetLang } = await getStorage([
+    'baseUrl',
+    'model',
+    'apiKey',
+    'body',
+    'targetLang',
+  ]);
 
   if (!apiKey) {
     port.postMessage({
@@ -35,11 +33,11 @@ export async function streamTranslateOverPort(
     messages: [
       {
         role: 'system',
-        content: `You are a professional, authentic machine translation engine.\nTranslate the Source Text provided by user from ${sourceLang} into ${targetLang}.`,
+        content: `You are a multilingual language processor. The target language is "${targetLang}".\n\n1. Determine the actual language of the Source Text.\n2. If the text is already in ${targetLang} (or a closely related variant), simplify it into clearer, everyday language while preserving meaning.\n3. Otherwise, translate the text into ${targetLang} accurately and naturally.\n\nOutput ONLY the result text. No explanations.`,
       },
       {
         role: 'user',
-        content: `Source Text: ${text}\nTranslated Text:`,
+        content: `Source Text: ${text}`,
       },
     ],
     stream: true,
