@@ -11,6 +11,12 @@ export default defineConfig({
     permissions: ['activeTab', 'storage'],
     host_permissions: ['https://api.deepseek.com/*'],
     optional_host_permissions: ['http://*/*', 'https://*/*'],
+    icons: {
+      16: 'assets/icons/translate.png',
+      32: 'assets/icons/translate.png',
+      48: 'assets/icons/translate.png',
+      128: 'assets/icons/translate.png',
+    },
     action: {
       default_title: 'LLM Streaming Translator',
     },

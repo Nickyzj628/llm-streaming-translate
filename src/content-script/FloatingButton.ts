@@ -80,7 +80,7 @@ export function show(mouseX: number, mouseY: number): void {
   `;
 
   const img = document.createElement('img');
-  img.src = browser.runtime.getURL('assets/icons/translate.svg');
+  img.src = browser.runtime.getURL('assets/icons/translate.png');
   img.style.width = '20px';
   img.style.height = '20px';
   img.style.pointerEvents = 'none';
