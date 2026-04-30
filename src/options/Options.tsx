@@ -1,5 +1,5 @@
-import type { ChangeEvent, FC, FormEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { Component } from 'solid-js';
+import { createSignal, For, onMount, Show } from 'solid-js';
 import browser from 'webextension-polyfill';
 import Button from '@/components/Button/Button';
 import Input from '@/components/Input/Input';
@@ -9,58 +9,59 @@ import type { StreamTranslatePortMessage } from '@/types/messages';
 import { getAllStorage, setStorage } from '@/utils/storage';
 import styles from './Options.module.scss';
 
-const Options: FC = () => {
-  const [baseUrl, setBaseUrl] = useState('');
-  const [model, setModel] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [body, setBody] = useState('');
-  const [models, setModels] = useState<string[]>([]);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
+const Options: Component = () => {
+  const [baseUrl, setBaseUrl] = createSignal('');
+  const [model, setModel] = createSignal('');
+  const [apiKey, setApiKey] = createSignal('');
+  const [body, setBody] = createSignal('');
+  const [models, setModels] = createSignal<string[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = createSignal(false);
   const { toast, showToast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isTesting, setIsTesting] = useState(false);
-  const isTestingRef = useRef(false);
-  const testPortRef = useRef<browser.Runtime.Port | null>(null);
+  let fileInputRef: HTMLInputElement | undefined;
+  const [isTesting, setIsTesting] = createSignal(false);
+  let isTestingRef = false;
+  let testPortRef: browser.Runtime.Port | null = null;
 
-  const fetchModels = useCallback(
-    async (url: string, key: string, currentModel: string): Promise<void> => {
-      setIsLoadingModels(true);
-      try {
-        const endpoint = `${url.replace(/\/$/, '')}/models`;
-        const response = await fetch(endpoint, {
-          headers: { Authorization: `Bearer ${key}` },
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        const data = (await response.json()) as unknown;
-        if (
-          !data ||
-          typeof data !== 'object' ||
-          !Array.isArray((data as Record<string, unknown>).data)
-        ) {
-          throw new Error('Unexpected response format');
-        }
-        const ids = (data as { data: Array<{ id?: string }> }).data
-          .map((m) => m.id)
-          .filter((id): id is string => Boolean(id));
-        setModels(ids);
-        if (ids.length > 0 && !ids.includes(currentModel)) {
-          setModel(ids[0] ?? '');
-        }
-      } catch (err) {
-        showToast(
-          `加载模型失败：${err instanceof Error ? err.message : String(err)}`,
-          'error',
-        );
-      } finally {
-        setIsLoadingModels(false);
+  const fetchModels = async (
+    url: string,
+    key: string,
+    currentModel: string,
+  ): Promise<void> => {
+    setIsLoadingModels(true);
+    try {
+      const endpoint = `${url.replace(/\/$/, '')}/models`;
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
       }
-    },
-    [showToast],
-  );
+      const data = (await response.json()) as unknown;
+      if (
+        !data ||
+        typeof data !== 'object' ||
+        !Array.isArray((data as Record<string, unknown>).data)
+      ) {
+        throw new Error('Unexpected response format');
+      }
+      const ids = (data as { data: Array<{ id?: string }> }).data
+        .map((m) => m.id)
+        .filter((id): id is string => Boolean(id));
+      setModels(ids);
+      if (ids.length > 0 && !ids.includes(currentModel)) {
+        setModel(ids[0] ?? '');
+      }
+    } catch (err) {
+      showToast(
+        `加载模型失败：${err instanceof Error ? err.message : String(err)}`,
+        'error',
+      );
+    } finally {
+      setIsLoadingModels(false);
+    }
+  };
 
-  useEffect(() => {
+  onMount(() => {
     getAllStorage().then((result) => {
       setBaseUrl(result.baseUrl);
       setModel(result.model);
@@ -70,34 +71,29 @@ const Options: FC = () => {
         fetchModels(result.baseUrl, result.apiKey, result.model);
       }
     });
+  });
 
-    return () => {
-      testPortRef.current?.disconnect();
-      testPortRef.current = null;
-    };
-  }, [fetchModels]);
-
-  const handleRefreshModels = useCallback((): void => {
-    if (!baseUrl || !apiKey) {
+  const handleRefreshModels = (): void => {
+    if (!baseUrl() || !apiKey()) {
       showToast('请先填写 API Base URL 和 API Key', 'error');
       return;
     }
-    fetchModels(baseUrl, apiKey, model);
-  }, [baseUrl, apiKey, model, fetchModels, showToast]);
+    fetchModels(baseUrl(), apiKey(), model());
+  };
 
-  const handleTestTranslation = useCallback((): void => {
-    if (isTestingRef.current) return;
-    if (!baseUrl || !apiKey || !model) {
+  const handleTestTranslation = (): void => {
+    if (isTestingRef) return;
+    if (!baseUrl() || !apiKey() || !model()) {
       showToast('请先填写 API Base URL、API Key 和模型', 'error');
       return;
     }
 
-    isTestingRef.current = true;
+    isTestingRef = true;
     setIsTesting(true);
-    testPortRef.current?.disconnect();
+    testPortRef?.disconnect();
 
     const port = browser.runtime.connect({ name: 'stream-translate' });
-    testPortRef.current = port;
+    testPortRef = port;
     let result = '';
 
     port.onMessage.addListener((message: unknown) => {
@@ -106,16 +102,16 @@ const Options: FC = () => {
         result += msg.chunk;
       } else if (msg.type === 'DONE') {
         showToast(`翻译结果：${result}`, 'success');
-        isTestingRef.current = false;
+        isTestingRef = false;
         setIsTesting(false);
         port.disconnect();
-        testPortRef.current = null;
+        testPortRef = null;
       } else if (msg.type === 'ERROR') {
         showToast(`测试失败：${msg.error}`, 'error');
-        isTestingRef.current = false;
+        isTestingRef = false;
         setIsTesting(false);
         port.disconnect();
-        testPortRef.current = null;
+        testPortRef = null;
       }
     });
 
@@ -123,11 +119,16 @@ const Options: FC = () => {
       type: 'START',
       text: 'The quick brown fox jumps over the lazy dog',
     });
-  }, [baseUrl, apiKey, model, showToast]);
+  };
 
-  const handleSave = async (e: FormEvent): Promise<void> => {
+  const handleSave = async (e: Event): Promise<void> => {
     e.preventDefault();
-    await setStorage({ baseUrl, model, apiKey, body });
+    await setStorage({
+      baseUrl: baseUrl(),
+      model: model(),
+      apiKey: apiKey(),
+      body: body(),
+    });
     showToast('设置已保存', 'success');
   };
 
@@ -145,13 +146,12 @@ const Options: FC = () => {
   };
 
   const handleImportClick = (): void => {
-    fileInputRef.current?.click();
+    fileInputRef?.click();
   };
 
-  const handleFileChange = async (
-    e: ChangeEvent<HTMLInputElement>,
-  ): Promise<void> => {
-    const file = e.target.files?.[0];
+  const handleFileChange = async (e: Event): Promise<void> => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
     if (!file) return;
 
     try {
@@ -184,25 +184,26 @@ const Options: FC = () => {
     } catch {
       alert('导入配置失败：无效的 JSON 文件');
     } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      if (fileInputRef) {
+        fileInputRef.value = '';
       }
     }
   };
 
-  const modelOptions = model ? Array.from(new Set([model, ...models])) : models;
+  const modelOptions = () =>
+    model() ? Array.from(new Set([model(), ...models()])) : models();
 
   return (
-    <div className={styles.options}>
-      <Toast toast={toast} />
+    <div class={styles.options}>
+      <Toast toast={toast()} />
 
-      <header className={styles.header}>
+      <header class={styles.header}>
         <h1>LLM Streaming Translator</h1>
         <p>配置你的翻译 API 设置</p>
       </header>
 
-      <form onSubmit={handleSave} className={styles.form}>
-        <div className={styles.section}>
+      <form onSubmit={handleSave} class={styles.form}>
+        <div class={styles.section}>
           <Input
             label="API Base URL"
             id="baseUrl"
@@ -210,15 +211,15 @@ const Options: FC = () => {
             placeholder="https://api.openai.com"
             spellCheck={false}
             autoComplete="off"
-            value={baseUrl}
-            onChange={(e): void => setBaseUrl(e.target.value)}
+            value={baseUrl()}
+            onInput={(e) => setBaseUrl(e.currentTarget.value)}
           />
-          <p className={styles.hint}>
+          <p class={styles.hint}>
             OpenAI 兼容的 API 端点，例如 https://api.deepseek.com
           </p>
         </div>
 
-        <div className={styles.section}>
+        <div class={styles.section}>
           <Input
             label="API Key"
             id="apiKey"
@@ -227,78 +228,76 @@ const Options: FC = () => {
             placeholder="sk-..."
             spellCheck={false}
             autoComplete="off"
-            value={apiKey}
-            onChange={(e): void => setApiKey(e.target.value)}
+            value={apiKey()}
+            onInput={(e) => setApiKey(e.currentTarget.value)}
           />
-          <p className={styles.hint}>
+          <p class={styles.hint}>
             你的 API Key 保存在浏览器扩展的本地存储中，仅会发送给你上方配置的
             API 端点。
           </p>
         </div>
 
-        <div className={styles.section}>
-          <label htmlFor="model" className={styles.selectLabel}>
+        <div class={styles.section}>
+          <label for="model" class={styles.selectLabel}>
             模型
           </label>
-          <div className={styles.modelRow}>
+          <div class={styles.modelRow}>
             <select
               id="model"
               name="model"
-              className={styles.select}
-              value={model}
-              onChange={(e): void => setModel(e.target.value)}
-              disabled={isLoadingModels}
+              class={styles.select}
+              value={model()}
+              onChange={(e) => setModel(e.currentTarget.value)}
+              disabled={isLoadingModels()}
             >
-              {modelOptions.length === 0 && (
+              <Show when={modelOptions().length === 0}>
                 <option value="">配置 Base URL 和 API Key 后加载模型</option>
-              )}
-              {modelOptions.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
+              </Show>
+              <For each={modelOptions()}>
+                {(m) => <option value={m}>{m}</option>}
+              </For>
             </select>
             <Button
               type="button"
               variant="secondary"
               size="medium"
               onClick={handleRefreshModels}
-              disabled={isLoadingModels}
+              disabled={isLoadingModels()}
             >
-              {isLoadingModels ? '加载中...' : '刷新'}
+              {isLoadingModels() ? '加载中...' : '刷新'}
             </Button>
           </div>
         </div>
 
-        <div className={styles.section}>
-          <label htmlFor="body" className={styles.selectLabel}>
+        <div class={styles.section}>
+          <label for="body" class={styles.selectLabel}>
             自定义请求体（JSON）
           </label>
           <textarea
             id="body"
             name="body"
-            className={styles.textarea}
+            class={styles.textarea}
             placeholder='{"thinking": {"type": "disabled"}}'
             spellCheck={false}
             autoComplete="off"
             rows={4}
-            value={body}
-            onChange={(e): void => setBody(e.target.value)}
+            value={body()}
+            onInput={(e) => setBody(e.currentTarget.value)}
           />
-          <p className={styles.hint}>
+          <p class={styles.hint}>
             额外的 JSON 字段会合并到 /chat/completions 的请求体中
           </p>
         </div>
 
-        <div className={styles.actions}>
+        <div class={styles.actions}>
           <Button
             type="button"
             variant="secondary"
             size="large"
             onClick={handleTestTranslation}
-            disabled={isTesting}
+            disabled={isTesting()}
           >
-            {isTesting ? '测试中...' : '测试翻译'}
+            {isTesting() ? '测试中...' : '测试翻译'}
           </Button>
           <Button type="submit" variant="primary" size="large">
             保存设置
@@ -306,9 +305,9 @@ const Options: FC = () => {
         </div>
       </form>
 
-      <div className={styles.importExport}>
+      <div class={styles.importExport}>
         <h3>备份与恢复</h3>
-        <div className={styles.importExportActions}>
+        <div class={styles.importExportActions}>
           <Button
             type="button"
             variant="secondary"
@@ -326,11 +325,13 @@ const Options: FC = () => {
             导入配置
           </Button>
           <input
-            ref={fileInputRef}
+            ref={(el) => {
+              fileInputRef = el;
+            }}
             type="file"
             accept="application/json"
             onChange={handleFileChange}
-            className={styles.hiddenInput}
+            class={styles.hiddenInput}
           />
         </div>
       </div>

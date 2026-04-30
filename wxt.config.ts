@@ -1,4 +1,5 @@
 import path from 'node:path';
+import solid from 'vite-plugin-solid';
 import { defineConfig } from 'wxt';
 
 export default defineConfig({
@@ -21,6 +22,7 @@ export default defineConfig({
     },
   },
   vite: () => ({
+    plugins: [solid()],
     resolve: {
       alias: {
         '@': path.resolve(import.meta.dirname, 'src'),

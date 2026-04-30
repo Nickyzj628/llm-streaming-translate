@@ -1,5 +1,4 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { render } from 'solid-js/web';
 import Options from '@/options/Options';
 
 const container = document.getElementById('options-root');
@@ -8,9 +7,4 @@ if (!container) {
   throw new Error('Could not find root container to mount the app');
 }
 
-const root = createRoot(container);
-root.render(
-  <StrictMode>
-    <Options />
-  </StrictMode>,
-);
+render(() => <Options />, container);

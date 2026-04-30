@@ -1,31 +1,28 @@
-import type { FC, ReactNode } from 'react';
+import type { Component, JSX } from 'solid-js';
+import { Show } from 'solid-js';
 import styles from './Card.module.scss';
 
 interface CardProps {
   title?: string;
   size?: 'default' | 'large';
-  children: ReactNode;
-  className?: string;
+  children: JSX.Element;
+  class?: string;
 }
 
-const Card: FC<CardProps> = ({
-  title,
-  size = 'default',
-  children,
-  className,
-}) => {
-  const classNames = [styles.card, size === 'large' && styles.large, className]
-    .filter(Boolean)
-    .join(' ');
+const Card: Component<CardProps> = (props) => {
+  const classNames = () =>
+    [styles.card, props.size === 'large' && styles.large, props.class]
+      .filter(Boolean)
+      .join(' ');
 
   return (
-    <div className={classNames}>
-      {title && (
-        <div className={styles.header}>
-          <span className={styles.title}>{title}</span>
+    <div class={classNames()}>
+      <Show when={props.title}>
+        <div class={styles.header}>
+          <span class={styles.title}>{props.title}</span>
         </div>
-      )}
-      {children}
+      </Show>
+      {props.children}
     </div>
   );
 };

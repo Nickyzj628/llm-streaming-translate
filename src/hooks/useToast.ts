@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createSignal, onCleanup } from 'solid-js';
 
 export interface ToastData {
   message: string;
@@ -6,30 +6,25 @@ export interface ToastData {
 }
 
 export function useToast(): {
-  toast: ToastData | null;
+  toast: () => ToastData | null;
   showToast: (message: string, type: 'success' | 'error') => void;
 } {
-  const [toast, setToast] = useState<ToastData | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast] = createSignal<ToastData | null>(null);
+  let timerId: ReturnType<typeof setTimeout> | null = null;
 
-  const showToast = useCallback(
-    (message: string, type: 'success' | 'error'): void => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      setToast({ message, type });
-      timerRef.current = setTimeout(() => setToast(null), 3000);
-    },
-    [],
-  );
+  const showToast = (message: string, type: 'success' | 'error'): void => {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+    setToast({ message, type });
+    timerId = setTimeout(() => setToast(null), 3000);
+  };
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, []);
+  onCleanup(() => {
+    if (timerId) {
+      clearTimeout(timerId);
+    }
+  });
 
   return { toast, showToast };
 }

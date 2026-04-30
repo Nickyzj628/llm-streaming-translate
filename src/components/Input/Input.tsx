@@ -1,20 +1,21 @@
-import type { FC, InputHTMLAttributes } from 'react';
+import type { Component, JSX } from 'solid-js';
+import { Show } from 'solid-js';
 import styles from './Input.module.scss';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
-const Input: FC<InputProps> = ({ label, id, className, ...props }) => (
-  <div className={styles.wrapper}>
-    {label && (
-      <label htmlFor={id} className={styles.label}>
-        {label}
+const Input: Component<InputProps> = (props) => (
+  <div class={styles.wrapper}>
+    <Show when={props.label}>
+      <label for={props.id} class={styles.label}>
+        {props.label}
       </label>
-    )}
+    </Show>
     <input
-      id={id}
-      className={`${styles.input} ${className || ''}`.trim()}
+      id={props.id}
+      class={`${styles.input} ${props.class || ''}`.trim()}
       {...props}
     />
   </div>

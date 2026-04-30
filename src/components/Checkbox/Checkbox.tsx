@@ -1,28 +1,22 @@
-import type { FC, InputHTMLAttributes } from 'react';
+import type { Component, JSX } from 'solid-js';
 import styles from './Checkbox.module.scss';
 
 interface CheckboxProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
+  extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string;
 }
 
-const Checkbox: FC<CheckboxProps> = ({
-  label,
-  id,
-  checked,
-  onChange,
-  ...props
-}) => (
-  <label htmlFor={id} className={styles.wrapper}>
+const Checkbox: Component<CheckboxProps> = (props) => (
+  <label for={props.id} class={styles.wrapper}>
     <input
       type="checkbox"
-      id={id}
-      className={styles.checkbox}
-      checked={checked}
-      onChange={onChange}
+      id={props.id}
+      class={styles.checkbox}
+      checked={props.checked}
+      onChange={props.onChange}
       {...props}
     />
-    <span className={styles.text}>{label}</span>
+    <span class={styles.text}>{props.label}</span>
   </label>
 );
 

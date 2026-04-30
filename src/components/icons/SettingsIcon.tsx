@@ -1,13 +1,13 @@
-import type { FC } from 'react';
+import type { Component } from 'solid-js';
 
 interface IconProps {
   size?: number;
 }
 
-export const SettingsIcon: FC<IconProps> = ({ size = 14 }) => (
+export const SettingsIcon: Component<IconProps> = (props) => (
   <svg
-    width={size}
-    height={size}
+    width={props.size}
+    height={props.size}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"

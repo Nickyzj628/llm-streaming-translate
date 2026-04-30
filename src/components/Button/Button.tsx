@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, FC, ReactNode } from 'react';
+import type { Component, JSX } from 'solid-js';
 import styles from './Button.module.scss';
 
 type ButtonVariant =
@@ -9,34 +9,28 @@ type ButtonVariant =
   | 'support';
 type ButtonSize = 'small' | 'medium' | 'large';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
-  children: ReactNode;
+  children: JSX.Element;
 }
 
-const Button: FC<ButtonProps> = ({
-  variant = 'primary',
-  size = 'medium',
-  fullWidth = false,
-  children,
-  className,
-  ...props
-}) => {
-  const classNames = [
-    styles.button,
-    styles[variant],
-    styles[size],
-    fullWidth && styles.fullWidth,
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+const Button: Component<ButtonProps> = (props) => {
+  const classNames = () =>
+    [
+      styles.button,
+      styles[props.variant ?? 'primary'],
+      styles[props.size ?? 'medium'],
+      props.fullWidth && styles.fullWidth,
+      props.class,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
   return (
-    <button type="button" className={classNames} {...props}>
-      {children}
+    <button type="button" class={classNames()} {...props}>
+      {props.children}
     </button>
   );
 };
