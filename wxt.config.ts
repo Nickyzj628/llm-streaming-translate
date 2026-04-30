@@ -23,7 +23,10 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: '{1fd0a7a9-8b13-4cfa-bfb9-da712514f553}',
-        strict_min_version: '112.0',
+        strict_min_version: '142.0',
+        data_collection_permissions: {
+          required: ['none'],
+        },
       },
     },
   },
@@ -37,9 +40,7 @@ export default defineConfig({
     },
     css: {
       preprocessorOptions: {
-        scss: {
-          api: 'modern-compiler',
-        },
+        scss: {},
       },
     },
   }),
