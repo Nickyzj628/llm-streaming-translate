@@ -10,12 +10,15 @@ export async function streamTranslateOverPort(
   text: string,
   port: Port,
 ): Promise<void> {
-  const { baseUrl, model, apiKey, body } = await getStorage([
-    'baseUrl',
-    'model',
-    'apiKey',
-    'body',
-  ]);
+  const { baseUrl, model, apiKey, body, sourceLang, targetLang } =
+    await getStorage([
+      'baseUrl',
+      'model',
+      'apiKey',
+      'body',
+      'sourceLang',
+      'targetLang',
+    ]);
 
   if (!apiKey) {
     port.postMessage({
@@ -32,8 +35,7 @@ export async function streamTranslateOverPort(
     messages: [
       {
         role: 'system',
-        content:
-          'You are a professional, authentic machine translation engine.\nTranslate the Source Text provided by user into Chinese.',
+        content: `You are a professional, authentic machine translation engine.\nTranslate the Source Text provided by user from ${sourceLang} into ${targetLang}.`,
       },
       {
         role: 'user',

@@ -167,6 +167,16 @@
   }
 }
 
+.langRow {
+  display: flex;
+  gap: variables.$space3;
+
+  > * {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 .importExport {
   margin-top: variables.$space5;
   background: variables.$white;

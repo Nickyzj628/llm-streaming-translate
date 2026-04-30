@@ -6,6 +6,8 @@ export interface StorageSchema {
   model: string;
   apiKey: string;
   body: string;
+  sourceLang: string;
+  targetLang: string;
 }
 
 export const defaultStorage: StorageSchema = {
@@ -16,4 +18,6 @@ export const defaultStorage: StorageSchema = {
   model: 'deepseek-chat',
   apiKey: '',
   body: '',
+  sourceLang: 'English',
+  targetLang: 'Chinese',
 };
