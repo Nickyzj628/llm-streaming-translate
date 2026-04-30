@@ -22,7 +22,7 @@ export default defineConfig({
     },
     browser_specific_settings: {
       gecko: {
-        id: '{754FB1AD-CC3B-4856-B6A0-7786F8CA9D17}',
+        id: '{1fd0a7a9-8b13-4cfa-bfb9-da712514f553}',
         strict_min_version: '112.0',
       },
     },
