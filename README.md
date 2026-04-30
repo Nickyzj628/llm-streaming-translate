@@ -12,7 +12,7 @@
 
 ## 技术栈
 
-- **框架**: [WXT](https://wxt.dev/) + [React](https://react.dev/) 19
+- **框架**: [WXT](https://wxt.dev/) + [SolidJS](https://www.solidjs.com/)
 - **语言**: TypeScript
 - **样式**: SCSS + CSS Modules
 - **代码检查**: Biome
@@ -56,7 +56,7 @@ src/
   options/
     Options.tsx         # 设置页面组件
   components/           # 共享组件（default export，支持 auto-import）
-  hooks/                # React hooks（支持 auto-import）
+  hooks/                # SolidJS 响应式 hooks（支持 auto-import）
   styles/               # 全局 SCSS 变量
   types/                # TypeScript 类型定义
   utils/                # 工具函数（支持 auto-import）

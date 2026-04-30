@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于 **React 19 + TypeScript + WXT** 的跨浏览器 Web 扩展（Chrome / Firefox）项目，使用 Manifest V3（Chrome）/ Manifest V2（Firefox）。
+这是一个基于 **SolidJS + TypeScript + WXT** 的跨浏览器 Web 扩展（Chrome / Firefox）项目，使用 Manifest V3（Chrome）/ Manifest V2（Firefox）。
 
 **功能**：网页划词翻译扩展。用户在网页上选中文本后，会出现一个浮动翻译按钮，点击后通过 LLM API 进行流式翻译，结果以浮窗形式显示在页面上。
 
@@ -80,8 +80,8 @@ src/
     TranslatePopup.ts     # 翻译结果浮窗（使用 Popover API，带自动定位）
   options/
     Options.tsx           # 设置页面主组件
-  components/             # 共享 React 组件（含 SCSS Modules），default export 供 auto-import
-  hooks/                  # React hooks（auto-import 扫描）
+  components/             # 共享 SolidJS 组件（含 SCSS Modules），default export 供 auto-import
+  hooks/                  # SolidJS 响应式 hooks（auto-import 扫描）
   styles/                 # 全局 SCSS 变量和重置样式
   types/                  # TypeScript 类型定义
   utils/                  # 工具函数（storage 封装等，auto-import 扫描）
@@ -193,12 +193,12 @@ await setStorage({ apiKey: 'new key' });
 
 使用 **SCSS + CSS Modules**。组件样式文件命名为 `ComponentName.module.scss`，导入后得到一个类名映射对象。全局样式在 [`src/styles/`](src/styles/) 中定义。
 
-全局 CSS reset 通过 `advanced-css-reset` 包提供，在 [`src/styles/_reset.scss`](src/styles/_reset.scss) 中导入。
+全局 CSS reset 已内联至 [`src/styles/_reset.scss`](src/styles/_reset.scss)。
 
 ### TypeScript 配置
 
-- `tsconfig.json` 继承 `@abhijithvijayan/tsconfig`
-- JSX 转换：`"jsx": "react-jsx"`（React 19 自动运行时）
+- `tsconfig.json` 独立配置（已内联原继承配置）
+- JSX 转换：`"jsx": "preserve"` + `"jsxImportSource": "solid-js"`（由 `vite-plugin-solid` 编译）
 - 模块解析：`"moduleResolution": "bundler"`
 - 包含 `src`、`globals.d.ts`
 
