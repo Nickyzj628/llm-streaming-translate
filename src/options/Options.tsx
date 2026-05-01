@@ -13,6 +13,7 @@ interface Preset {
   name: string;
   baseUrl: string;
   model: string;
+  apiKey?: string;
   body: string;
 }
 
@@ -34,6 +35,13 @@ const PRESETS: Preset[] = [
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
     model: 'models/gemma-4-31b-it',
     body: '{"reasoning_effort": "minimal"}',
+  },
+  {
+    name: 'llama.cpp',
+    baseUrl: 'http://127.0.0.1:11434/v1',
+    model: '',
+    apiKey: 'sk-local',
+    body: '{"chat_template_kwargs": {"enable_thinking": false}}',
   },
 ];
 
@@ -112,7 +120,7 @@ const Options: Component = () => {
     setBaseUrl(preset.baseUrl);
     setModel(preset.model);
     setBody(preset.body);
-    setApiKey('');
+    setApiKey(preset.apiKey ?? '');
     setModels([]);
     target.value = '';
   };
