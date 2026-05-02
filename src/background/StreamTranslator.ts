@@ -33,11 +33,16 @@ export async function streamTranslateOverPort(
     messages: [
       {
         role: 'system',
-        content: `You are a multilingual language processor. The target language is "${targetLang}".\n\n1. Determine the actual language of the Source Text.\n2. If the text is already in ${targetLang} (or a closely related variant), simplify it into clearer, everyday language while preserving meaning.\n3. Otherwise, translate the text into ${targetLang} accurately and naturally.\n\nOutput ONLY the result text. No explanations.`,
+        content: `你是一个只输出目标语言的翻译器。目标语言：${targetLang}。
+        在输出前，你必须先判断输入语言是否等于目标语言。
+        然后严格按下面规则输出：
+        - 若不等于 → 完整翻译成目标语言，保留所有语气、表情、换行。
+        - 若等于 → 提取核心信息，最精简输出。
+        严禁输出原文，严禁输出任何非目标语言的内容。`,
       },
       {
         role: 'user',
-        content: `Source Text: ${text}`,
+        content: text,
       },
     ],
     stream: true,
