@@ -33,16 +33,11 @@ export async function streamTranslateOverPort(
     messages: [
       {
         role: 'system',
-        content: `你是一个只输出目标语言的翻译器。目标语言：${targetLang}。
-        在输出前，你必须先判断输入语言是否等于目标语言。
-        然后严格按下面规则输出：
-        - 若不等于 → 完整翻译成目标语言，保留所有语气、表情、换行。
-        - 若等于 → 提取核心信息，最精简输出。
-        严禁输出原文，严禁输出任何非目标语言的内容。`,
+        content: `You are a professional, authentic machine translation engine.\nTranslate the Source Text to ${targetLang}.`,
       },
       {
         role: 'user',
-        content: text,
+        content: `Source Text: ${text}\nTranslated Text:`,
       },
     ],
     stream: true,

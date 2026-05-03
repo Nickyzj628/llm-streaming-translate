@@ -225,14 +225,16 @@ const Options: Component = () => {
           targetLang:
             typeof parsed.targetLang === 'string'
               ? parsed.targetLang
-              : 'Chinese',
+              : '简体中文',
         });
         setBaseUrl(parsed.baseUrl);
         setModel(parsed.model);
         setApiKey(parsed.apiKey);
         setBody(parsed.body);
         setTargetLang(
-          typeof parsed.targetLang === 'string' ? parsed.targetLang : 'Chinese',
+          typeof parsed.targetLang === 'string'
+            ? parsed.targetLang
+            : '简体中文',
         );
         if (parsed.baseUrl && parsed.apiKey) {
           fetchModels(parsed.baseUrl, parsed.apiKey, parsed.model);
@@ -268,7 +270,7 @@ const Options: Component = () => {
             label="目标语言"
             id="targetLang"
             name="targetLang"
-            placeholder="Chinese"
+            placeholder="简体中文"
             spellcheck={false}
             autocomplete="off"
             value={targetLang()}
