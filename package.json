@@ -20,15 +20,15 @@
     "lint:fix": "biome check --write ."
   },
   "dependencies": {
-    "parse-sse": "^0.1.0",
+    "@nickyzj2023/utils": "^1.0.67",
     "solid-js": "^1.9.12",
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
-    "@types/node": "^25.0.3",
-    "@types/webextension-polyfill": "^0.12.4",
-    "sass": "^1.97.1",
+    "@types/node": "^25.6.0",
+    "@types/webextension-polyfill": "^0.12.5",
+    "sass": "^1.99.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
     "vite-plugin-solid": "^2.11.12",

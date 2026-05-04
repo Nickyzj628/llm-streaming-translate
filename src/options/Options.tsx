@@ -40,7 +40,7 @@ const PRESETS: Preset[] = [
     name: 'llama.cpp',
     baseUrl: 'http://127.0.0.1:11434/v1',
     model: '',
-    apiKey: 'sk-local',
+    apiKey: '',
     body: '{"chat_template_kwargs": {"enable_thinking": false}}',
   },
 ];
@@ -61,7 +61,7 @@ const Options: Component = () => {
 
   const fetchModels = async (
     url: string,
-    key: string,
+    key = '1',
     currentModel: string,
   ): Promise<void> => {
     setIsLoadingModels(true);
@@ -126,8 +126,8 @@ const Options: Component = () => {
   };
 
   const handleRefreshModels = (): void => {
-    if (!baseUrl() || !apiKey()) {
-      showToast('请先填写 API Base URL 和 API Key', 'error');
+    if (!baseUrl()) {
+      showToast('请先填写 API Base URL', 'error');
       return;
     }
     fetchModels(baseUrl(), apiKey(), model());
@@ -135,8 +135,8 @@ const Options: Component = () => {
 
   const handleTestTranslation = (): void => {
     if (isTestingRef) return;
-    if (!baseUrl() || !apiKey() || !model()) {
-      showToast('请先填写 API Base URL、API Key 和模型', 'error');
+    if (!baseUrl() || !model()) {
+      showToast('请先填写 API Base URL 和模型', 'error');
       return;
     }
 
@@ -326,8 +326,8 @@ const Options: Component = () => {
             onInput={(e) => setApiKey(e.currentTarget.value)}
           />
           <p class={styles.hint}>
-            你的 API Key 保存在浏览器扩展的本地存储中，仅会发送给你上方配置的
-            API 端点。
+            你的 API Key
+            保存在浏览器扩展的本地存储中，仅会发送给你上方配置的接口。
           </p>
         </div>
 

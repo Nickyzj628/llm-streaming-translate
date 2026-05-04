@@ -141,7 +141,7 @@ export default defineConfig({
 
 1. **ContentScript** 监听网页上的 `mouseup` 和 `selectionchange` 事件，检测到文本选中后显示浮动翻译按钮（[`FloatingButton.ts`](src/content-script/FloatingButton.ts)）
 2. 用户点击按钮后，ContentScript 创建翻译结果浮窗（[`TranslatePopup.ts`](src/content-script/TranslatePopup.ts)），并通过 `browser.runtime.connect({ name: 'stream-translate' })` 建立长连接 Port
-3. **Background** 的 [`StreamTranslator.ts`](src/background/StreamTranslator.ts) 接收 `START` 消息，调用 LLM API（OpenAI 兼容格式，使用 SSE 流式响应），通过 `parse-sse` 库解析事件流，将翻译片段通过 Port 回传
+3. **Background** 的 [`StreamTranslator.ts`](src/background/StreamTranslator.ts) 接收 `START` 消息，调用 LLM API（OpenAI 兼容格式，使用 SSE 流式响应），通过 `@nickyzj2023/utils` 的 `chatCompletions` 解析事件流，将翻译片段通过 Port 回传
 4. ContentScript 接收 `CHUNK` 消息逐字显示，接收 `DONE` 或 `ERROR` 结束翻译
 5. 点击扩展图标打开 **Options** 选项页面，用于配置 API Base URL、模型、API Key、自定义请求体等
 
