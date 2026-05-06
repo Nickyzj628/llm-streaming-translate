@@ -25,16 +25,21 @@ pnpm dev:chrome    # Chrome 扩展开发模式
 pnpm dev:firefox   # Firefox 扩展开发模式
 
 # 生产构建
+pnpm build          # 清理 extension/ 后同时构建 Chrome 和 Firefox
 pnpm build:chrome   # 构建 Chrome 扩展，输出到 extension/chrome-mv3/
 pnpm build:firefox  # 构建 Firefox 扩展，输出到 extension/firefox-mv2/
-pnpm build          # 默认构建（Chrome）
 
 # ZIP 打包（用于应用商店提交）
-pnpm zip            # 打包为 extension/*.zip
+pnpm zip            # 同时打包 Chrome 和 Firefox
+pnpm zip:chrome     # 单独打包 Chrome
+pnpm zip:firefox    # 单独打包 Firefox
 
 # 代码检查
 pnpm lint           # Biome 检查（lint + format）
 pnpm lint:fix       # Biome 自动修复
+
+# 发布前完整流程
+pnpm prepublish     # lint:fix → lint → build → zip
 ```
 
 ### 加载扩展进行调试
