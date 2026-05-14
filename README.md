@@ -4,7 +4,7 @@
 
 支持 Chrome（Manifest V3）和 Firefox（Manifest V2）。
 
-![演示动画](/public/demo.gif)
+![演示动画](/demo.gif)
 
 ## 使用方式
 

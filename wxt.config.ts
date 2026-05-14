@@ -20,6 +20,12 @@ export default defineConfig({
     action: {
       default_title: 'LLM Streaming Translator',
     },
+    web_accessible_resources: [
+      {
+        resources: ['assets/icons/translate.png'],
+        matches: ['<all_urls>'],
+      },
+    ],
     browser_specific_settings: {
       gecko: {
         id: '{1fd0a7a9-8b13-4cfa-bfb9-da712514f553}',

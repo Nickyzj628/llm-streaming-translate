@@ -1,6 +1,6 @@
 {
   "name": "llm-streaming-translator",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "基于大模型的划词流式翻译插件",
   "private": true,
   "type": "module",
