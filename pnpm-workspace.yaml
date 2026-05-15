@@ -1,2 +1,6 @@
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  spawn-sync: true
 minimumReleaseAgeExclude:
   - "@nickyzj2023/*"
