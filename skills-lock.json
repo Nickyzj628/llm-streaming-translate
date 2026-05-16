@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "skills": {
+    "addfox-best-practices": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/addfox-best-practices/SKILL.md",
+      "computedHash": "14a757d54bcd51d15beff041efef80b6680d93bd8e401477aeb812226f040ccf"
+    },
+    "addfox-debugging": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/addfox-debugging/SKILL.md",
+      "computedHash": "6e2462444bc7cc0798fc71424d2e68189a170c90850f1c1fbdbbf73db71fb9e6"
+    },
+    "addfox-testing": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/addfox-testing/SKILL.md",
+      "computedHash": "b2e2410661b60ec704b3d39e2f9350948007431d9e89c7c329eb6c5652118dc3"
+    },
+    "convert-web-pages-to-browser-extensions": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/convert-web-pages-to-browser-extensions/SKILL.md",
+      "computedHash": "763592da7bebb9a6f340a08af41dbd8625f831db2ec8f88e47e0e356e4aeebea"
+    },
+    "extension-functions-best-practices": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/extension-functions-best-practices/SKILL.md",
+      "computedHash": "f61d164ef05bead841b450e8760ef808ee4eb54b9c00ea230f7a3f3ba37aed26"
+    },
+    "migrate-to-addfox": {
+      "source": "addfox/skills",
+      "sourceType": "github",
+      "skillPath": "skills/migrate-to-addfox/SKILL.md",
+      "computedHash": "fb40a57f2636d86abd775704d529623b06cd259ab8125f7cbeaa1bdd1de2aef7"
+    }
+  }
+}

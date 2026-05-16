@@ -1,36 +1,28 @@
 {
   "name": "llm-streaming-translator",
-  "version": "1.0.3",
-  "description": "基于大模型的划词流式翻译插件",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "dev:chrome": "wxt -b chrome",
-    "dev:firefox": "wxt -b firefox",
-    "build": "node -e \"fs.rmSync('extension',{recursive:true,force:true})\" && wxt build -b chrome && wxt build -b firefox",
-    "build:chrome": "wxt build -b chrome",
-    "build:firefox": "wxt build -b firefox",
-    "zip": "wxt zip -b chrome && wxt zip -b firefox",
-    "zip:chrome": "wxt zip -b chrome",
-    "zip:firefox": "wxt zip -b firefox",
-    "prepublish": "pnpm lint:fix && pnpm lint && pnpm build && pnpm zip",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write ."
+    "dev": "addfox dev",
+    "build": "addfox build --no-open && addfox build --browser firefox --no-open",
+    "build:chrome": "addfox build --no-open",
+    "build:firefox": "addfox build --browser firefox --no-open"
   },
   "dependencies": {
+    "@addfox/utils": "^0.1.1",
     "@nickyzj2023/utils": "^1.0.67",
-    "solid-js": "^1.9.12",
+    "solid-js": "^1.9.11",
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.13",
-    "@types/node": "^25.6.0",
+    "addfox": "^0.1.1",
+    "@rsbuild/plugin-babel": "^1.1.2",
+    "@rsbuild/plugin-sass": "^1.5.1",
+    "@rsbuild/plugin-solid": "^1.1.1",
+    "@types/chrome": "^0.1.38",
     "@types/webextension-polyfill": "^0.12.5",
-    "sass": "^1.99.0",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.10",
-    "vite-plugin-solid": "^2.11.12",
-    "wxt": "^0.20.25"
+    "sass": "^1.77.0",
+    "typescript": "^5.9.3"
   }
 }

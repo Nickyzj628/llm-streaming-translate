@@ -1,40 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2020",
     "module": "ESNext",
-    "noEmit": true,
-    "lib": ["dom", "dom.iterable", "dom.asynciterable", "ES2023"],
     "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "declaration": false,
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js",
-
-    "moduleDetection": "force",
-    "skipLibCheck": true,
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "strictPropertyInitialization": false,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "useDefineForClassFields": true,
+    "jsx": "preserve",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "skipLibCheck": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./app/*"]
     },
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "stripInternal": true,
-    "noUncheckedSideEffectImports": true
+    "types": [
+      "webextension-polyfill"
+    ]
   },
-  "include": ["src", "globals.d.ts", ".wxt/types"]
+  "include": [
+    "app"
+  ]
 }
