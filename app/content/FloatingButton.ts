@@ -82,7 +82,7 @@ export function show(mouseX: number, mouseY: number): void {
   `;
 
   const img = document.createElement('img');
-  img.src = browser.runtime.getURL('icons/translate.png');
+  img.src = browser.runtime.getURL('32.png');
   img.style.cssText = `
     width: 20px;
     height: 20px;

@@ -228,7 +228,7 @@ export function createTranslatePopup(): TranslatePopupController {
     contentEl.textContent = '';
     reasoningEl.textContent = '';
     reasoningEl.style.display = 'none';
-    usageEl.innerHTML = '';
+    usageEl.textContent = '';
     usageEl.style.display = 'none';
     contentEl.style.color = '#111827';
     positionPopup(popup, targetRect);
@@ -302,7 +302,11 @@ export function createTranslatePopup(): TranslatePopupController {
 
   function setUsage(usage: { promptTokens: number; completionTokens: number }): void {
     if (!usageEl) return;
-    usageEl.innerHTML = `<span>输入: ${usage.promptTokens}token</span><span>输出: ${usage.completionTokens}token</span>`;
+    const span1 = document.createElement('span');
+    span1.textContent = `输入: ${usage.promptTokens}token`;
+    const span2 = document.createElement('span');
+    span2.textContent = `输出: ${usage.completionTokens}token`;
+    usageEl.replaceChildren(span1, span2);
     usageEl.style.display = 'flex';
   }
 
