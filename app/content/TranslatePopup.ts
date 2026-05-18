@@ -39,11 +39,25 @@ function createPopupElement(): PopoverHTMLElement {
     opacity: 0;
     transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
     will-change: opacity;
+    display: flex;
+    flex-direction: column;
   `;
 
   if (!isPopoverSupported()) {
     el.style.zIndex = '2147483647';
   }
+
+  const reasoning = document.createElement('div');
+  reasoning.id = 'llm-translate-popup-reasoning';
+  reasoning.style.cssText = `
+    color: #9ca3af;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-bottom: 8px;
+    display: none;
+    flex-shrink: 0;
+  `;
 
   const content = document.createElement('div');
   content.id = 'llm-translate-popup-content';
@@ -54,9 +68,26 @@ function createPopupElement(): PopoverHTMLElement {
     scrollbar-gutter: stable;
     text-wrap: pretty;
     opacity: 1;
+    flex: 1;
+    min-height: 0;
   `;
 
+  const usage = document.createElement('div');
+  usage.id = 'llm-translate-popup-usage';
+  usage.style.cssText = `
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e5e7eb;
+    color: #6b7280;
+    font-size: 12px;
+    display: none;
+    justify-content: space-between;
+    flex-shrink: 0;
+  `;
+
+  el.appendChild(reasoning);
   el.appendChild(content);
+  el.appendChild(usage);
   return el;
 }
 
@@ -92,29 +123,27 @@ function positionPopup(popup: HTMLElement, targetRect: DOMRect): void {
   popup.style.left = `${left}px`;
   popup.style.top = `${top}px`;
   popup.style.maxHeight = `${maxHeight}px`;
-
-  const content = popup.querySelector<HTMLElement>(
-    '#llm-translate-popup-content',
-  );
-  if (content) {
-    content.style.maxHeight = `${maxHeight - 32}px`;
-  }
 }
 
 export interface TranslatePopupController {
   show: (targetRect: DOMRect) => void;
   hide: () => void;
   appendChunk: (chunk: string) => void;
+  appendReasoning: (chunk: string) => void;
+  setUsage: (usage: { promptTokens: number; completionTokens: number }) => void;
   setError: (error: string) => void;
 }
 
 export function createTranslatePopup(): TranslatePopupController {
   let popup: PopoverHTMLElement | null = null;
   let contentEl: HTMLElement | null = null;
+  let reasoningEl: HTMLElement | null = null;
+  let usageEl: HTMLElement | null = null;
   let outsideClickHandler: ((e: MouseEvent) => void) | null = null;
   let outsideClickTimeout: ReturnType<typeof setTimeout> | null = null;
   let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
   let lastTargetRect: DOMRect | null = null;
+  let hasReceivedContent = false;
 
   function ensureElements(): void {
     const existing = document.getElementById(
@@ -123,12 +152,20 @@ export function createTranslatePopup(): TranslatePopupController {
     if (existing) {
       popup = existing;
       contentEl = document.getElementById('llm-translate-popup-content');
+      reasoningEl = document.getElementById('llm-translate-popup-reasoning');
+      usageEl = document.getElementById('llm-translate-popup-usage');
       return;
     }
 
     popup = createPopupElement();
     contentEl = popup.querySelector(
       '#llm-translate-popup-content',
+    ) as HTMLElement;
+    reasoningEl = popup.querySelector(
+      '#llm-translate-popup-reasoning',
+    ) as HTMLElement;
+    usageEl = popup.querySelector(
+      '#llm-translate-popup-usage',
     ) as HTMLElement;
     document.body.appendChild(popup);
   }
@@ -184,10 +221,15 @@ export function createTranslatePopup(): TranslatePopupController {
   function show(targetRect: DOMRect): void {
     hide(false);
     lastTargetRect = targetRect;
+    hasReceivedContent = false;
     ensureElements();
-    if (!popup || !contentEl) return;
+    if (!popup || !contentEl || !reasoningEl || !usageEl) return;
 
     contentEl.textContent = '';
+    reasoningEl.textContent = '';
+    reasoningEl.style.display = 'none';
+    usageEl.innerHTML = '';
+    usageEl.style.display = 'none';
     contentEl.style.color = '#111827';
     positionPopup(popup, targetRect);
 
@@ -236,10 +278,32 @@ export function createTranslatePopup(): TranslatePopupController {
 
   function appendChunk(chunk: string): void {
     if (!contentEl || !popup) return;
+    hasReceivedContent = true;
+    if (reasoningEl && reasoningEl.style.display !== 'none') {
+      reasoningEl.textContent = '';
+      reasoningEl.style.display = 'none';
+    }
     contentEl.textContent += chunk;
     if (lastTargetRect) {
       positionPopup(popup, lastTargetRect);
     }
+  }
+
+  function appendReasoning(chunk: string): void {
+    if (!reasoningEl || !popup || hasReceivedContent) return;
+    if (reasoningEl.style.display === 'none') {
+      reasoningEl.style.display = 'block';
+    }
+    reasoningEl.textContent += chunk;
+    if (lastTargetRect) {
+      positionPopup(popup, lastTargetRect);
+    }
+  }
+
+  function setUsage(usage: { promptTokens: number; completionTokens: number }): void {
+    if (!usageEl) return;
+    usageEl.innerHTML = `<span>输入: ${usage.promptTokens}token</span><span>输出: ${usage.completionTokens}token</span>`;
+    usageEl.style.display = 'flex';
   }
 
   function setError(error: string): void {
@@ -248,5 +312,5 @@ export function createTranslatePopup(): TranslatePopupController {
     contentEl.style.color = '#dc2626';
   }
 
-  return { show, hide, appendChunk, setError };
+  return { show, hide, appendChunk, appendReasoning, setUsage, setError };
 }

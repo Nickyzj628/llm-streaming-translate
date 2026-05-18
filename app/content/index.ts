@@ -80,6 +80,10 @@ function startTranslate(text: string): void {
     const msg = message as StreamTranslatePortMessage;
     if (msg.type === 'CHUNK' && msg.chunk) {
       currentPopup?.appendChunk(msg.chunk);
+    } else if (msg.type === 'REASONING' && msg.reasoning) {
+      currentPopup?.appendReasoning(msg.reasoning);
+    } else if (msg.type === 'USAGE') {
+      currentPopup?.setUsage(msg.usage);
     } else if (msg.type === 'DONE') {
       finish();
     } else if (msg.type === 'ERROR') {
