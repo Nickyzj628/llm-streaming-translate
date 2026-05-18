@@ -1,28 +1,27 @@
 {
-  "name": "llm-streaming-translator",
-  "version": "1.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "addfox dev",
-    "build": "addfox build --no-open && addfox build --browser firefox --no-open",
-    "build:chrome": "addfox build --no-open",
-    "build:firefox": "addfox build --browser firefox --no-open"
-  },
-  "dependencies": {
-    "@addfox/utils": "^0.1.1",
-    "@nickyzj2023/utils": "^1.0.67",
-    "solid-js": "^1.9.11",
-    "webextension-polyfill": "^0.12.0"
-  },
-  "devDependencies": {
-    "addfox": "^0.1.1",
-    "@rsbuild/plugin-babel": "^1.1.2",
-    "@rsbuild/plugin-sass": "^1.5.1",
-    "@rsbuild/plugin-solid": "^1.1.1",
-    "@types/chrome": "^0.1.38",
-    "@types/webextension-polyfill": "^0.12.5",
-    "sass": "^1.77.0",
-    "typescript": "^5.9.3"
-  }
+	"name": "llm-streaming-translator",
+	"version": "1.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "addfox dev --browser firefox --cache",
+		"dev:chrome": "addfox dev --browser chrome --cache",
+		"build": "addfox build --browser firefox --no-open && addfox build --browser chrome --no-open"
+	},
+	"dependencies": {
+		"@addfox/utils": "^0.1.1",
+		"@nickyzj2023/utils": "^1.0.67",
+		"solid-js": "^1.9.11",
+		"webextension-polyfill": "^0.12.0"
+	},
+	"devDependencies": {
+		"addfox": "^0.1.1",
+		"@rsbuild/plugin-babel": "^1.1.2",
+		"@rsbuild/plugin-sass": "^1.5.1",
+		"@rsbuild/plugin-solid": "^1.1.1",
+		"@types/chrome": "^0.1.38",
+		"@types/webextension-polyfill": "^0.12.5",
+		"sass": "^1.77.0",
+		"typescript": "^5.9.3"
+	}
 }

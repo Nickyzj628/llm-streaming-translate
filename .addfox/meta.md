@@ -24,16 +24,13 @@ related_files:
 - Description: 基于大模型的网页划词流式翻译插件
 - Version: 1.0.3
 - Framework version: 0.1.1
-- Manifest version: 2
+- Manifest version: 3
 
 ## 2. Permissions
 
 ### 2.1 Permissions
 - activeTab
 - storage
-- https://api.deepseek.com/*
-- http://*/*
-- https://*/*
 
 ### 2.2 Host permissions
 - None
@@ -45,23 +42,23 @@ related_files:
 
 ```text
 background/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/background/index.ts
+├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/background/index.ts
 └── 📁 JS/
     └── background/index.js
     ⚙️  html: false
 
 content/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/content/index.ts
+├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/content/index.ts
 └── 📁 JS/
     └── content/index.js
     ⚙️  html: false
 
 options/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/options/index.tsx
+├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/options/index.tsx
 ├── 📁 JS/
 │   ├── options/index.js
 │   └── static/js/shared-vendor.js
 └── 📁 CSS/
-    └── static/css/options.2d95a5121f.css
+    └── static/css/options.css
     ⚙️  html: true
 ```

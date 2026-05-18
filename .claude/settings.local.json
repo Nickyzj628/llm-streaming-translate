@@ -8,7 +8,9 @@
       "Bash(npx addfox *)",
       "Bash(pnpm build:chrome *)",
       "Bash(pnpm build:firefox *)",
-      "Bash(pnpm run *)"
+      "Bash(pnpm run *)",
+      "Bash(pnpm exec *)",
+      "Bash(node node_modules/addfox/bin/addfox.js --help)"
     ]
   }
 }
