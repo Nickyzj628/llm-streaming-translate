@@ -8,6 +8,19 @@ export interface StreamTranslateChunk {
   chunk: string;
 }
 
+export interface StreamTranslateReasoning {
+  type: 'REASONING';
+  reasoning: string;
+}
+
+export interface StreamTranslateUsage {
+  type: 'USAGE';
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+  };
+}
+
 export interface StreamTranslateDone {
   type: 'DONE';
 }
@@ -20,5 +33,7 @@ export interface StreamTranslateError {
 export type StreamTranslatePortMessage =
   | StreamTranslateStart
   | StreamTranslateChunk
+  | StreamTranslateReasoning
+  | StreamTranslateUsage
   | StreamTranslateDone
   | StreamTranslateError;
