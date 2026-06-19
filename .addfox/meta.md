@@ -23,7 +23,7 @@ related_files:
 - Name: LLM Streaming Translator
 - Description: 基于大模型的网页划词流式翻译插件
 - Version: 1.1.1
-- Framework version: 0.1.1
+- Framework version: 0.2.4
 - Manifest version: 3
 
 ## 2. Permissions
@@ -42,19 +42,19 @@ related_files:
 
 ```text
 background/
-├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/background/index.ts
+├── 📄 Source: E:/Projects/llm-streaming-translate/app/background/index.ts
 └── 📁 JS/
     └── background/index.js
     ⚙️  html: false
 
 content/
-├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/content/index.ts
+├── 📄 Source: E:/Projects/llm-streaming-translate/app/content/index.ts
 └── 📁 JS/
     └── content/index.js
     ⚙️  html: false
 
 options/
-├── 📄 Source: C:/Users/Administrator/Documents/llm-streaming-translate/app/options/index.tsx
+├── 📄 Source: E:/Projects/llm-streaming-translate/app/options/index.tsx
 ├── 📁 JS/
 │   ├── options/index.js
 │   └── static/js/shared-vendor.js
