@@ -1,7 +1,12 @@
 import browser from "webextension-polyfill";
 
+let currentParent: ShadowRoot | HTMLElement = document.body;
 let currentButton: HTMLElement | null = null;
 let clickHandler: ((e: MouseEvent) => void) | null = null;
+
+export function setParent(parent: ShadowRoot | HTMLElement): void {
+	currentParent = parent;
+}
 
 function generateSquirclePath(size: number, n: number): string {
 	const center = size / 2;
@@ -46,7 +51,7 @@ function ensureClipPath(): void {
 	clipPath.appendChild(path);
 	defs.appendChild(clipPath);
 	svg.appendChild(defs);
-	document.body.appendChild(svg);
+	currentParent.appendChild(svg);
 }
 
 export function show(mouseX: number, mouseY: number): void {
@@ -109,7 +114,7 @@ export function show(mouseX: number, mouseY: number): void {
 	});
 	wrapper.addEventListener("mouseleave", resetScale);
 
-	document.body.appendChild(wrapper);
+	currentParent.appendChild(wrapper);
 	currentButton = wrapper;
 
 	requestAnimationFrame(() => {

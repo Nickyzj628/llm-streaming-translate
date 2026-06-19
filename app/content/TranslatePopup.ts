@@ -4,6 +4,12 @@ const POPUP_MIN_HEIGHT = 80;
 const POPUP_MAX_HEIGHT = 400;
 const GAP = 8;
 
+let currentParent: ShadowRoot | HTMLElement = document.body;
+
+export function setPopupParent(parent: ShadowRoot | HTMLElement): void {
+	currentParent = parent;
+}
+
 interface PopoverHTMLElement extends HTMLElement {
 	popover: "auto" | "manual";
 	showPopover(): void;
@@ -146,14 +152,14 @@ export function createTranslatePopup(): TranslatePopupController {
 	let hasReceivedContent = false;
 
 	function ensureElements(): void {
-		const existing = document.getElementById(
-			POPUP_ID,
+		const existing = currentParent.querySelector(
+			`#${POPUP_ID}`,
 		) as PopoverHTMLElement | null;
 		if (existing) {
 			popup = existing;
-			contentEl = document.getElementById("llm-translate-popup-content");
-			reasoningEl = document.getElementById("llm-translate-popup-reasoning");
-			usageEl = document.getElementById("llm-translate-popup-usage");
+			contentEl = popup.querySelector("#llm-translate-popup-content");
+			reasoningEl = popup.querySelector("#llm-translate-popup-reasoning");
+			usageEl = popup.querySelector("#llm-translate-popup-usage");
 			return;
 		}
 
@@ -165,7 +171,7 @@ export function createTranslatePopup(): TranslatePopupController {
 			"#llm-translate-popup-reasoning",
 		) as HTMLElement;
 		usageEl = popup.querySelector("#llm-translate-popup-usage") as HTMLElement;
-		document.body.appendChild(popup);
+		currentParent.appendChild(popup);
 	}
 
 	function attachOutsideClickListener(): void {
@@ -173,8 +179,8 @@ export function createTranslatePopup(): TranslatePopupController {
 
 		outsideClickHandler = (e: MouseEvent) => {
 			if (!popup) return;
-			const target = e.target as Node;
-			if (!popup.contains(target)) {
+			const path = e.composedPath();
+			if (!path.includes(popup)) {
 				hide();
 			}
 		};
@@ -248,9 +254,7 @@ export function createTranslatePopup(): TranslatePopupController {
 		detachKeydownListener();
 		lastTargetRect = null;
 
-		const existing = document.getElementById(
-			POPUP_ID,
-		) as PopoverHTMLElement | null;
+		const existing = popup;
 		if (existing) {
 			if (animate) {
 				existing.style.opacity = "0";

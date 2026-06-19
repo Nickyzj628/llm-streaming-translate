@@ -1,15 +1,27 @@
+import { defineShadowContentUI } from "@addfox/utils";
 import browser from "webextension-polyfill";
 import {
 	hide as hideButton,
 	isButtonElement,
 	onClick,
+	setParent,
 	show as showButton,
 } from "@/content/FloatingButton";
 import {
 	createTranslatePopup,
+	setPopupParent,
 	type TranslatePopupController,
 } from "@/content/TranslatePopup";
 import type { StreamTranslatePortMessage } from "@/types/messages";
+
+const mountUI = defineShadowContentUI({
+	name: "llm-translate-ui",
+	target: document.body,
+	injectMode: "append",
+});
+const shadowRoot = mountUI() as ShadowRoot;
+setParent(shadowRoot);
+setPopupParent(shadowRoot);
 
 let isTranslating = false;
 let currentPopup: TranslatePopupController | null = null;
