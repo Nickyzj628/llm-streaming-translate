@@ -76,7 +76,7 @@ function startTranslate(text: string): void {
 	const port = browser.runtime.connect({ name: "stream-translate" });
 	currentPort = port;
 
-	port.onMessage.addListener((message: unknown) => {
+	const messageHandler = (message: unknown): void => {
 		const msg = message as StreamTranslatePortMessage;
 		if (msg.type === "CHUNK" && msg.chunk) {
 			currentPopup?.appendChunk(msg.chunk);
@@ -91,14 +91,17 @@ function startTranslate(text: string): void {
 			currentPopup?.setError(msg.error || "未知错误");
 			finish();
 		}
-	});
+	};
 
-	port.onDisconnect.addListener(() => {
+	const disconnectHandler = (): void => {
 		if (!isFinished) {
 			finish();
 			currentPopup?.setError("连接已断开");
 		}
-	});
+	};
+
+	port.onMessage.addListener(messageHandler);
+	port.onDisconnect.addListener(disconnectHandler);
 
 	port.postMessage({ type: "START", text });
 
@@ -106,6 +109,8 @@ function startTranslate(text: string): void {
 		if (isFinished) return;
 		isFinished = true;
 		isTranslating = false;
+		port.onMessage.removeListener(messageHandler);
+		port.onDisconnect.removeListener(disconnectHandler);
 		currentPort = null;
 		port.disconnect();
 	}

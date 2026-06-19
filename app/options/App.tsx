@@ -69,7 +69,7 @@ const App: Component = () => {
 
 	const fetchModels = async (
 		url: string,
-		key = "1",
+		key: string,
 		currentModel: string,
 	): Promise<void> => {
 		fetchAbortController?.abort();
@@ -152,6 +152,10 @@ const App: Component = () => {
 	const handleRefreshModels = (): void => {
 		if (!baseUrl()) {
 			showToast("请先填写 API Base URL", "error");
+			return;
+		}
+		if (!apiKey()) {
+			showToast("请先填写 API Key", "error");
 			return;
 		}
 		fetchModels(baseUrl(), apiKey(), model());
