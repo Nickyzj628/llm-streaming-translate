@@ -84,7 +84,7 @@ export async function streamTranslateOverPort(
 		port.postMessage({ type: "DONE" });
 	} catch (err) {
 		const errorMessage = err instanceof Error ? err.message : String(err);
-		console.error("[LLM Streaming Translator BG] 翻译失败：", errorMessage);
+		console.error("[LLM Streaming Translator BG] 翻译失败");
 		port.postMessage({ type: "ERROR", error: errorMessage });
 	}
 }

@@ -237,6 +237,7 @@ const App: Component = () => {
 		a.download = `llm-translate-config-${new Date().toISOString().slice(0, 10)}.json`;
 		a.click();
 		URL.revokeObjectURL(url);
+		showToast("配置已导出，文件包含 API Key，请妥善保存勿分享", "success");
 	};
 
 	const handleImportClick = (): void => {
