@@ -1,5 +1,5 @@
 import type { Component, JSX } from "solid-js";
-import styles from "./Button.module.scss";
+import styles from "./Button.module.css";
 
 type ButtonVariant = "primary" | "secondary";
 type ButtonSize = "small" | "medium" | "large";

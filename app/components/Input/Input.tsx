@@ -1,6 +1,6 @@
 import type { Component, JSX } from "solid-js";
 import { Show } from "solid-js";
-import styles from "./Input.module.scss";
+import styles from "./Input.module.css";
 
 interface InputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
 	label?: string;

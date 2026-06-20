@@ -1,0 +1,33 @@
+.label {
+	display: block;
+	font-size: 13px;
+	font-weight: var(--medium);
+	margin-bottom: var(--space2);
+	color: var(--grey);
+	letter-spacing: -0.01em;
+}
+
+.input {
+	width: 100%;
+	padding: 12px 14px;
+	font-size: 16px;
+	font-family: var(--fontFamily);
+	background: var(--white);
+	color: var(--black);
+	border-radius: var(--radiusMd);
+	box-shadow: var(--shadowBorder);
+	transition: box-shadow var(--transitionBase);
+	box-sizing: border-box;
+}
+
+.input:hover {
+	box-shadow: var(--shadowBorderHover);
+}
+
+.input:focus-visible {
+	box-shadow: var(--shadowFocus);
+}
+
+.input::placeholder {
+	color: var(--greyLight);
+}

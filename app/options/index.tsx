@@ -1,4 +1,5 @@
-import "../styles/reset.scss";
+import "../styles/reset.css";
+import "../styles/variables.css";
 import { render } from "solid-js/web";
 import App from "./App";
 

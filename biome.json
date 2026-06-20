@@ -14,8 +14,7 @@
 			"!**/.addfox/**",
 			"!**/node_modules/**",
 			"!**/pnpm-lock.yaml",
-			"!**/*.scss",
-			"!**/*.module.scss"
+			"!**/*.scss"
 		]
 	},
 	"formatter": {

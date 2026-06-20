@@ -1,7 +1,7 @@
 import type { Component } from "solid-js";
 import { Show } from "solid-js";
 import type { ToastData } from "../../hooks/useToast";
-import styles from "./Toast.module.scss";
+import styles from "./Toast.module.css";
 
 interface ToastProps {
 	toast: ToastData | null;

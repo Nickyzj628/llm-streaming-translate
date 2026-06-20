@@ -21,13 +21,11 @@
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",
     "@rsbuild/plugin-babel": "^2.0.0",
-    "@rsbuild/plugin-sass": "^1.5.3",
     "@rsbuild/plugin-solid": "^1.2.2",
     "@types/chrome": "^0.1.43",
     "@types/webextension-polyfill": "^0.12.5",
     "addfox": "^0.2.4",
     "rimraf": "^5.0.0",
-    "sass": "^1.101.0",
     "typescript": "^6.0.3"
   }
 }

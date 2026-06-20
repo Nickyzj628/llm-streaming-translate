@@ -14,7 +14,7 @@ import Toast from "../components/Toast/Toast";
 import { useToast } from "../hooks/useToast";
 import type { StreamTranslatePortMessage } from "../types/messages";
 import { getAllStorage, setStorage } from "../utils/storage";
-import styles from "./Options.module.scss";
+import styles from "./Options.module.css";
 
 interface Preset {
 	name: string;

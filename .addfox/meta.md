@@ -59,6 +59,6 @@ options/
 │   ├── options/index.js
 │   └── static/js/shared-vendor.js
 └── 📁 CSS/
-    └── static/css/options.2d95a5121f.css
+    └── static/css/options.3ffac4538d.css
     ⚙️  html: true
 ```

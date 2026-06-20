@@ -1,0 +1,74 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space2);
+	font-family: var(--fontFamily);
+	font-weight: var(--medium);
+	border: none;
+	border-radius: var(--radiusMd);
+	cursor: pointer;
+	white-space: nowrap;
+	user-select: none;
+	transition: box-shadow var(--transitionBase),
+		transform var(--transitionBase), background-color var(--transitionBase);
+}
+
+.fullWidth {
+	width: 100%;
+}
+
+.primary {
+	background: var(--primary);
+	color: var(--white);
+	box-shadow: var(--shadowBorder);
+}
+
+.primary:hover {
+	transform: translateY(-1px);
+	box-shadow: var(--shadowBorderHover), var(--shadowAmbient);
+}
+
+.primary:active {
+	transform: translateY(0);
+}
+
+.primary:focus-visible {
+	box-shadow: var(--shadowFocus);
+}
+
+.secondary {
+	background: var(--white);
+	color: var(--black);
+	box-shadow: var(--shadowBorder);
+}
+
+.secondary:hover {
+	background: var(--bgSubtle);
+	transform: translateY(-1px);
+	box-shadow: var(--shadowBorderHover), var(--shadowAmbient);
+}
+
+.secondary:active {
+	transform: translateY(0);
+}
+
+.secondary:focus-visible {
+	box-shadow: var(--shadowFocus);
+}
+
+.small {
+	padding: var(--space2) var(--space3);
+	font-size: 13px;
+	gap: 6px;
+}
+
+.medium {
+	padding: 10px 16px;
+	font-size: 14px;
+}
+
+.large {
+	padding: 12px 24px;
+	font-size: 14px;
+}
