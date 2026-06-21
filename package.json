@@ -10,7 +10,8 @@
     "lint": "biome check app/",
     "lint:fix": "biome check --write app/",
     "format": "biome format --write app/",
-    "format:check": "biome format app/"
+    "format:check": "biome format app/",
+    "zip:source": "rimraf .addfox/extension/source.zip && 7z a .addfox/extension/source.zip . -xr!node_modules -xr!.addfox -xr!dist -xr!*.zip -xr!.git"
   },
   "dependencies": {
     "@addfox/utils": "^0.2.4",
