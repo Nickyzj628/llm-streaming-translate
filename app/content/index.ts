@@ -8,10 +8,9 @@ import {
 	show as showButton,
 } from "@/content/FloatingButton";
 import {
-	createTranslatePopup,
-	setPopupParent,
-	type TranslatePopupController,
-} from "@/content/TranslatePopup";
+	createInlineTranslator,
+	type InlineTranslatorController,
+} from "@/content/InlineTranslator";
 import type { StreamTranslatePortMessage } from "@/types/messages";
 
 const mountUI = defineShadowContentUI({
@@ -21,10 +20,9 @@ const mountUI = defineShadowContentUI({
 });
 const shadowRoot = mountUI() as ShadowRoot;
 setParent(shadowRoot);
-setPopupParent(shadowRoot);
 
 let isTranslating = false;
-let currentPopup: TranslatePopupController | null = null;
+let currentTranslator: InlineTranslatorController | null = null;
 let currentPort: browser.Runtime.Port | null = null;
 
 function getSelectedText(): string {
@@ -42,7 +40,8 @@ function handleMouseUp(e: MouseEvent): void {
 
 	requestAnimationFrame(() => {
 		if (isTranslating) {
-			currentPopup?.hide();
+			currentTranslator?.destroy();
+			currentTranslator = null;
 			isTranslating = false;
 		}
 
@@ -63,26 +62,33 @@ function handleSelectionChange(): void {
 	}
 }
 
-function startTranslate(text: string): void {
+function startTranslate(_text: string): void {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	void _text;
+
+	// 若已有翻译进行中，先取消前一个
 	if (isTranslating) {
-		currentPopup?.hide();
+		currentTranslator?.destroy();
 		currentPort?.disconnect();
 		currentPort = null;
+		currentTranslator = null;
 		isTranslating = false;
 	}
 
 	const selection = window.getSelection();
 	if (!selection || selection.rangeCount === 0) return;
 
+	// 保留 Range，仅清除高亮
 	const range = selection.getRangeAt(0);
-	const targetRect = range.getBoundingClientRect();
 	selection.removeAllRanges();
+
+	// 创建原地翻译器，提取文本节点和分段信息
+	const translator = createInlineTranslator(range, shadowRoot);
+	currentTranslator = translator;
+	const segmentedText = translator.getText();
 
 	isTranslating = true;
 	hideButton();
-
-	currentPopup = createTranslatePopup();
-	currentPopup.show(targetRect);
 
 	let isFinished = false;
 	const port = browser.runtime.connect({ name: "stream-translate" });
@@ -91,31 +97,34 @@ function startTranslate(text: string): void {
 	const messageHandler = (message: unknown): void => {
 		const msg = message as StreamTranslatePortMessage;
 		if (msg.type === "CHUNK" && msg.chunk) {
-			currentPopup?.appendChunk(msg.chunk);
-		} else if (msg.type === "REASONING" && msg.reasoning) {
-			currentPopup?.appendReasoning(msg.reasoning);
+			currentTranslator?.appendChunk(msg.chunk);
+		} else if (msg.type === "REASONING") {
+			// 原地替换模式下忽略推理过程
 		} else if (msg.type === "USAGE") {
-			currentPopup?.setUsage(msg.usage);
+			// 原地替换模式下忽略 token 计数
 		} else if (msg.type === "DONE") {
+			currentTranslator?.finish();
 			finish();
 		} else if (msg.type === "ERROR") {
 			console.error("[LLM Translate] Translation failed:", msg.error);
-			currentPopup?.setError(msg.error || "未知错误");
+			currentTranslator?.destroy();
+			currentTranslator = null;
 			finish();
 		}
 	};
 
 	const disconnectHandler = (): void => {
 		if (!isFinished) {
+			currentTranslator?.destroy();
+			currentTranslator = null;
 			finish();
-			currentPopup?.setError("连接已断开");
 		}
 	};
 
 	port.onMessage.addListener(messageHandler);
 	port.onDisconnect.addListener(disconnectHandler);
 
-	port.postMessage({ type: "START", text });
+	port.postMessage({ type: "START", text: segmentedText });
 
 	function finish(): void {
 		if (isFinished) return;
@@ -133,7 +142,8 @@ function cleanup(): void {
 	document.removeEventListener("mouseup", handleMouseUp);
 	document.removeEventListener("selectionchange", handleSelectionChange);
 	hideButton();
-	currentPopup?.hide();
+	currentTranslator?.destroy();
+	currentTranslator = null;
 	currentPort?.disconnect();
 	currentPort = null;
 }
