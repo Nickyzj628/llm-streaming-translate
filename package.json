@@ -1,6 +1,6 @@
 {
   "name": "llm-streaming-translator",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -24,6 +24,7 @@
     "@rsbuild/plugin-babel": "^2.0.0",
     "@rsbuild/plugin-solid": "^1.2.2",
     "@types/chrome": "^0.1.43",
+    "@types/node": "^26.1.2",
     "@types/webextension-polyfill": "^0.12.5",
     "addfox": "^0.2.4",
     "rimraf": "^5.0.0",

@@ -1,14 +1,8 @@
 import type { Component } from "solid-js";
-import {
-	createMemo,
-	createSignal,
-	For,
-	onCleanup,
-	onMount,
-	Show,
-} from "solid-js";
+import { createMemo, createSignal, For, onCleanup, onMount } from "solid-js";
 import browser from "webextension-polyfill";
 import Button from "../components/Button/Button";
+import Combobox from "../components/Combobox/Combobox";
 import Input from "../components/Input/Input";
 import Toast from "../components/Toast/Toast";
 import { useToast } from "../hooks/useToast";
@@ -111,6 +105,8 @@ const App: Component = () => {
 		}
 	};
 
+	// 页面挂载时只回填已保存的配置，不自动拉取模型列表：
+	// 部分供应商没有 /models 接口或端点较慢，统一由用户点击"刷新"按钮手动触发
 	onMount(() => {
 		getAllStorage().then((result) => {
 			setTargetLang(result.targetLang);
@@ -118,9 +114,6 @@ const App: Component = () => {
 			setModel(result.model);
 			setApiKey(result.apiKey);
 			setBody(result.body);
-			if (result.baseUrl && result.apiKey) {
-				fetchModels(result.baseUrl, result.apiKey, result.model);
-			}
 		});
 	});
 
@@ -278,9 +271,7 @@ const App: Component = () => {
 				setTargetLang(
 					typeof parsed.targetLang === "string" ? parsed.targetLang : "简体中文",
 				);
-				if (parsed.baseUrl && parsed.apiKey) {
-					fetchModels(parsed.baseUrl, parsed.apiKey, parsed.model);
-				}
+				// 导入后不自动拉取模型列表，统一由用户点击"刷新"按钮手动触发
 				showToast("设置已保存", "success");
 			} else {
 				alert("配置文件无效：缺少必要字段");
@@ -382,19 +373,16 @@ const App: Component = () => {
 						模型
 					</label>
 					<div class={styles.modelRow}>
-						<select
-							id="model"
-							name="model"
-							class={styles.select}
+						{/* 自定义下拉组件：既可从"刷新"拉取的模型列表中点选，
+						    也可直接手动输入模型名，适配没有 /models 接口的供应商。
+						    点右侧箭头或聚焦输入框展开全部候选，输入关键字实时过滤 */}
+						<Combobox
+							class={styles.modelCombobox}
 							value={model()}
-							onChange={(e) => setModel(e.currentTarget.value)}
-							disabled={isLoadingModels()}
-						>
-							<Show when={modelOptions().length === 0}>
-								<option value="">配置 Base URL 和 API Key 后加载模型</option>
-							</Show>
-							<For each={modelOptions()}>{(m) => <option value={m}>{m}</option>}</For>
-						</select>
+							options={modelOptions()}
+							placeholder="选择或手动输入模型名"
+							onChange={setModel}
+						/>
 						<Button
 							type="button"
 							variant="secondary"
@@ -405,6 +393,9 @@ const App: Component = () => {
 							{isLoadingModels() ? "加载中..." : "刷新"}
 						</Button>
 					</div>
+					<p class={styles.hint}>
+						点击右侧箭头或聚焦输入框展开模型列表，输入关键字可过滤；也可直接手动输入模型名
+					</p>
 				</div>
 
 				<div class={styles.section}>

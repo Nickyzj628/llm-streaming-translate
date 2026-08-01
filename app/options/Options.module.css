@@ -140,6 +140,12 @@
 	align-items: stretch;
 }
 
+/* 模型下拉组件在 flex 行内占满剩余宽度（原 select 用 flex:1 + min-width:0 语义） */
+.modelCombobox {
+	flex: 1;
+	min-width: 0;
+}
+
 .modelRow > button {
 	flex-shrink: 0;
 }

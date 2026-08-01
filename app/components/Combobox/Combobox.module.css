@@ -1,0 +1,92 @@
+.wrapper {
+	position: relative;
+}
+
+/* 输入框：右侧留出箭头按钮的空间 */
+.input {
+	width: 100%;
+	padding: 12px 40px 12px 14px;
+	font-size: 16px;
+	font-family: var(--fontFamily);
+	background: var(--white);
+	color: var(--black);
+	border-radius: var(--radiusMd);
+	box-shadow: var(--shadowBorder);
+	transition: box-shadow var(--transitionBase);
+	box-sizing: border-box;
+}
+
+.input:hover {
+	box-shadow: var(--shadowBorderHover);
+}
+
+.input:focus-visible {
+	box-shadow: var(--shadowFocus);
+}
+
+.input::placeholder {
+	color: var(--greyLight);
+}
+
+/* 右侧展开/收起箭头按钮，悬浮于输入框内部 */
+.toggle {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--grey);
+	border-radius: var(--radiusMd);
+	cursor: pointer;
+	transition: color var(--transitionBase);
+}
+
+.toggle:hover {
+	color: var(--black);
+}
+
+/* 候选列表：绝对定位在输入框正下方，浮层 */
+.list {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 240px;
+	overflow-y: auto;
+	margin: 0;
+	padding: var(--space2) 0;
+	list-style: none;
+	background: var(--white);
+	border-radius: var(--radiusMd);
+	box-shadow: var(--shadowElevated);
+	z-index: 100;
+}
+
+.option {
+	padding: 8px 14px;
+	font-size: 14px;
+	color: var(--black);
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.option:hover,
+.option.active {
+	background: var(--bg);
+}
+
+/* 无匹配时的占位提示 */
+.empty {
+	padding: 8px 14px;
+	font-size: 14px;
+	color: var(--grey);
+}

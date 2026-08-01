@@ -26,19 +26,22 @@ importers:
         version: 2.5.0
       '@rsbuild/plugin-babel':
         specifier: ^2.0.0
-        version: 2.0.0(@rsbuild/core@2.0.7)
+        version: 2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0)
       '@rsbuild/plugin-solid':
         specifier: ^1.2.2
-        version: 1.2.2(@babel/core@7.29.7)(@rsbuild/core@2.0.7)(solid-js@1.9.13)
+        version: 1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(solid-js@1.9.13)(supports-color@7.2.0)
       '@types/chrome':
         specifier: ^0.1.43
         version: 0.1.43
+      '@types/node':
+        specifier: ^26.1.2
+        version: 26.1.2
       '@types/webextension-polyfill':
         specifier: ^0.12.5
         version: 0.12.5
       addfox:
         specifier: ^0.2.4
-        version: 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)
+        version: 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)
       rimraf:
         specifier: ^5.0.0
         version: 5.0.10
@@ -561,6 +564,9 @@ packages:
   '@types/har-format@1.2.16':
     resolution: {integrity: sha512-fluxdy7ryD3MV6h8pTfTYpy/xQzCFC7m89nOH9y94cNqJ1mDIDPut7MnRHI3F6qRmh/cT2fUjG1MLdCNb4hE9A==}
 
+  '@types/node@26.1.2':
+    resolution: {integrity: sha512-Vu4a5UFA9rIIFJ7rB/Vaafh9lrCQszopTCx6KjFboXTGQbPNasehVR5TEiithSDGyd1DEiUByggTZsg8jukeIg==}
+
   '@types/webextension-polyfill@0.12.5':
     resolution: {integrity: sha512-uKSAv6LgcVdINmxXMKBuVIcg/2m5JZugoZO8x20g7j2bXJkPIl/lVGQcDlbV+aXAiTyXT2RA5U5mI4IGCDMQeg==}
 
@@ -924,6 +930,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  undici-types@8.3.0:
+    resolution: {integrity: sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==}
+
   update-browserslist-db@1.2.3:
     resolution: {integrity: sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==}
     hasBin: true
@@ -963,7 +972,7 @@ packages:
 
 snapshots:
 
-  '@addfox/cli@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)':
+  '@addfox/cli@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)':
     dependencies:
       '@addfox/common': 0.2.4
       '@addfox/core': 0.2.4(@rsbuild/core@2.0.7)
@@ -972,7 +981,7 @@ snapshots:
       '@addfox/rsbuild-plugin-extension-hmr': 0.2.4(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))
       '@addfox/rsbuild-plugin-extension-manifest': 0.2.4(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))
       '@addfox/rsbuild-plugin-extension-monitor': 0.2.4(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))
-      '@addfox/rsbuild-plugin-vue': 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34)
+      '@addfox/rsbuild-plugin-vue': 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34)
       '@rsbuild/core': 2.0.7
       '@rspack/core': 2.0.4(@swc/helpers@0.5.21)
       create-addfox-app: 0.2.4
@@ -1031,12 +1040,12 @@ snapshots:
       '@rsbuild/core': 2.0.7
       '@rspack/core': 2.0.4(@swc/helpers@0.5.21)
 
-  '@addfox/rsbuild-plugin-vue@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34)':
+  '@addfox/rsbuild-plugin-vue@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34)':
     dependencies:
       '@rsbuild/core': 2.0.7
-      '@rsbuild/plugin-babel': 2.0.0(@rsbuild/core@2.0.7)
+      '@rsbuild/plugin-babel': 2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0)
       '@rsbuild/plugin-vue': 1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34)
-      '@rsbuild/plugin-vue-jsx': 2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7)
+      '@rsbuild/plugin-vue-jsx': 2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0)
       '@rspack/core': 2.0.4(@swc/helpers@0.5.21)
       '@vue/compiler-sfc': 3.5.34
 
@@ -1052,20 +1061,20 @@ snapshots:
 
   '@babel/compat-data@7.29.7': {}
 
-  '@babel/core@7.29.7':
+  '@babel/core@7.29.7(supports-color@7.2.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
       '@babel/helper-compilation-targets': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@babel/helpers': 7.29.7
       '@babel/parser': 7.29.7
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
       '@jridgewell/remapping': 2.3.5
       convert-source-map: 2.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -1100,15 +1109,15 @@ snapshots:
       lru-cache: 5.1.1
       semver: 6.3.1
 
-  '@babel/helper-create-class-features-plugin@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-create-class-features-plugin@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-annotate-as-pure': 7.29.7
-      '@babel/helper-member-expression-to-functions': 7.29.7
+      '@babel/helper-member-expression-to-functions': 7.29.7(supports-color@7.2.0)
       '@babel/helper-optimise-call-expression': 7.29.7
-      '@babel/helper-replace-supers': 7.29.7(@babel/core@7.29.7)
-      '@babel/helper-skip-transparent-expression-wrappers': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/helper-replace-supers': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/helper-skip-transparent-expression-wrappers': 7.29.7(supports-color@7.2.0)
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       semver: 6.3.1
     transitivePeerDependencies:
       - supports-color
@@ -1117,9 +1126,9 @@ snapshots:
 
   '@babel/helper-globals@7.29.7': {}
 
-  '@babel/helper-member-expression-to-functions@7.29.7':
+  '@babel/helper-member-expression-to-functions@7.29.7(supports-color@7.2.0)':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
     transitivePeerDependencies:
       - supports-color
@@ -1128,26 +1137,26 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.7
 
-  '@babel/helper-module-imports@7.28.6':
+  '@babel/helper-module-imports@7.28.6(supports-color@7.2.0)':
     dependencies:
-      '@babel/traverse': 7.29.0
+      '@babel/traverse': 7.29.0(supports-color@7.2.0)
       '@babel/types': 7.29.0
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-imports@7.29.7':
+  '@babel/helper-module-imports@7.29.7(supports-color@7.2.0)':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-module-transforms@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
       '@babel/helper-validator-identifier': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1157,18 +1166,18 @@ snapshots:
 
   '@babel/helper-plugin-utils@7.29.7': {}
 
-  '@babel/helper-replace-supers@7.29.7(@babel/core@7.29.7)':
+  '@babel/helper-replace-supers@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-member-expression-to-functions': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-member-expression-to-functions': 7.29.7(supports-color@7.2.0)
       '@babel/helper-optimise-call-expression': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/helper-skip-transparent-expression-wrappers@7.29.7':
+  '@babel/helper-skip-transparent-expression-wrappers@7.29.7(supports-color@7.2.0)':
     dependencies:
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
     transitivePeerDependencies:
       - supports-color
@@ -1196,70 +1205,70 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.7
 
-  '@babel/plugin-proposal-decorators@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-proposal-decorators@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
-      '@babel/plugin-syntax-decorators': 7.29.7(@babel/core@7.29.7)
+      '@babel/plugin-syntax-decorators': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/plugin-syntax-decorators@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-syntax-decorators@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
 
-  '@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.7)':
+  '@babel/plugin-syntax-jsx@7.28.6(@babel/core@7.29.7(supports-color@7.2.0))':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
 
-  '@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
 
-  '@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
 
-  '@babel/plugin-transform-class-properties@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-transform-class-properties@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7)
-      '@babel/helper-plugin-utils': 7.29.7
-    transitivePeerDependencies:
-      - supports-color
-
-  '@babel/plugin-transform-modules-commonjs@7.29.7(@babel/core@7.29.7)':
-    dependencies:
-      '@babel/core': 7.29.7
-      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/plugin-transform-typescript@7.29.7(@babel/core@7.29.7)':
+  '@babel/plugin-transform-modules-commonjs@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-module-transforms': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/helper-plugin-utils': 7.29.7
+    transitivePeerDependencies:
+      - supports-color
+
+  '@babel/plugin-transform-typescript@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
+    dependencies:
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-annotate-as-pure': 7.29.7
-      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-create-class-features-plugin': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
-      '@babel/helper-skip-transparent-expression-wrappers': 7.29.7
-      '@babel/plugin-syntax-typescript': 7.29.7(@babel/core@7.29.7)
+      '@babel/helper-skip-transparent-expression-wrappers': 7.29.7(supports-color@7.2.0)
+      '@babel/plugin-syntax-typescript': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/preset-typescript@7.29.7(@babel/core@7.29.7)':
+  '@babel/preset-typescript@7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
       '@babel/helper-validator-option': 7.29.7
-      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7)
-      '@babel/plugin-transform-modules-commonjs': 7.29.7(@babel/core@7.29.7)
-      '@babel/plugin-transform-typescript': 7.29.7(@babel/core@7.29.7)
+      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
+      '@babel/plugin-transform-modules-commonjs': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/plugin-transform-typescript': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1269,7 +1278,7 @@ snapshots:
       '@babel/parser': 7.29.7
       '@babel/types': 7.29.7
 
-  '@babel/traverse@7.29.0':
+  '@babel/traverse@7.29.0(supports-color@7.2.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
@@ -1277,11 +1286,11 @@ snapshots:
       '@babel/parser': 7.29.7
       '@babel/template': 7.29.7
       '@babel/types': 7.29.7
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@babel/traverse@7.29.7':
+  '@babel/traverse@7.29.7(supports-color@7.2.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
       '@babel/generator': 7.29.7
@@ -1289,7 +1298,7 @@ snapshots:
       '@babel/parser': 7.29.7
       '@babel/template': 7.29.7
       '@babel/types': 7.29.7
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1401,12 +1410,12 @@ snapshots:
     transitivePeerDependencies:
       - '@module-federation/runtime-tools'
 
-  '@rsbuild/plugin-babel@1.2.1(@rsbuild/core@2.0.7)':
+  '@rsbuild/plugin-babel@1.2.1(@rsbuild/core@2.0.7)(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7)
-      '@babel/plugin-transform-class-properties': 7.29.7(@babel/core@7.29.7)
-      '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/plugin-transform-class-properties': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@types/babel__core': 7.20.5
       reduce-configs: 1.1.2
     optionalDependencies:
@@ -1414,12 +1423,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)':
+  '@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0)':
     dependencies:
-      '@babel/core': 7.29.7
-      '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7)
-      '@babel/plugin-transform-class-properties': 7.29.7(@babel/core@7.29.7)
-      '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/plugin-transform-class-properties': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@types/babel__core': 7.20.5
       reduce-configs: 1.1.2
     optionalDependencies:
@@ -1427,11 +1436,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@rsbuild/plugin-solid@1.2.2(@babel/core@7.29.7)(@rsbuild/core@2.0.7)(solid-js@1.9.13)':
+  '@rsbuild/plugin-solid@1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(solid-js@1.9.13)(supports-color@7.2.0)':
     dependencies:
-      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.0.7)
-      babel-preset-solid: 1.9.12(@babel/core@7.29.7)(solid-js@1.9.13)
-      solid-refresh: 0.6.3(solid-js@1.9.13)
+      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.0.7)(supports-color@7.2.0)
+      babel-preset-solid: 1.9.12(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.13)
+      solid-refresh: 0.6.3(solid-js@1.9.13)(supports-color@7.2.0)
     optionalDependencies:
       '@rsbuild/core': 2.0.7
     transitivePeerDependencies:
@@ -1439,11 +1448,11 @@ snapshots:
       - solid-js
       - supports-color
 
-  '@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7)':
+  '@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0)':
     dependencies:
-      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.0.7)
-      '@vue/babel-plugin-jsx': 2.0.1(@babel/core@7.29.7)
-      babel-plugin-vue-jsx-hmr: 1.0.0
+      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.0.7)(supports-color@7.2.0)
+      '@vue/babel-plugin-jsx': 2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
+      babel-plugin-vue-jsx-hmr: 1.0.0(supports-color@7.2.0)
     optionalDependencies:
       '@rsbuild/core': 2.0.7
     transitivePeerDependencies:
@@ -1558,60 +1567,64 @@ snapshots:
 
   '@types/har-format@1.2.16': {}
 
+  '@types/node@26.1.2':
+    dependencies:
+      undici-types: 8.3.0
+
   '@types/webextension-polyfill@0.12.5': {}
 
   '@vue/babel-helper-vue-transform-on@1.5.0': {}
 
   '@vue/babel-helper-vue-transform-on@2.0.1': {}
 
-  '@vue/babel-plugin-jsx@1.5.0(@babel/core@7.29.7)':
+  '@vue/babel-plugin-jsx@1.5.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
-      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7)
+      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
       '@vue/babel-helper-vue-transform-on': 1.5.0
-      '@vue/babel-plugin-resolve-type': 1.5.0(@babel/core@7.29.7)
+      '@vue/babel-plugin-resolve-type': 1.5.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@vue/shared': 3.5.34
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vue/babel-plugin-jsx@2.0.1(@babel/core@7.29.7)':
+  '@vue/babel-plugin-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
-      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7)
+      '@babel/plugin-syntax-jsx': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))
       '@babel/template': 7.29.7
-      '@babel/traverse': 7.29.7
+      '@babel/traverse': 7.29.7(supports-color@7.2.0)
       '@babel/types': 7.29.7
       '@vue/babel-helper-vue-transform-on': 2.0.1
-      '@vue/babel-plugin-resolve-type': 2.0.1(@babel/core@7.29.7)
+      '@vue/babel-plugin-resolve-type': 2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@vue/shared': 3.5.34
     optionalDependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vue/babel-plugin-resolve-type@1.5.0(@babel/core@7.29.7)':
+  '@vue/babel-plugin-resolve-type@1.5.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/core': 7.29.7
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
       '@babel/parser': 7.29.7
       '@vue/compiler-sfc': 3.5.34
     transitivePeerDependencies:
       - supports-color
 
-  '@vue/babel-plugin-resolve-type@2.0.1(@babel/core@7.29.7)':
+  '@vue/babel-plugin-resolve-type@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
       '@babel/code-frame': 7.29.7
-      '@babel/core': 7.29.7
-      '@babel/helper-module-imports': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@babel/helper-module-imports': 7.29.7(supports-color@7.2.0)
       '@babel/helper-plugin-utils': 7.29.7
       '@babel/parser': 7.29.7
       '@vue/compiler-sfc': 3.5.34
@@ -1650,9 +1663,9 @@ snapshots:
 
   '@vue/shared@3.5.34': {}
 
-  addfox@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34):
+  addfox@0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34):
     dependencies:
-      '@addfox/cli': 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7)(@rsbuild/core@2.0.7))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)
+      '@addfox/cli': 0.2.4(@rsbuild/core@2.0.7)(@rsbuild/plugin-babel@2.0.0(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.0(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.0.7)(supports-color@7.2.0))(@rsbuild/plugin-vue@1.2.8(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.21)(@vue/compiler-sfc@3.5.34)
       '@addfox/core': 0.2.4(@rsbuild/core@2.0.7)
       '@addfox/rsbuild-plugin-extension-monitor': 0.2.4(@rsbuild/core@2.0.7)(@rspack/core@2.0.4(@swc/helpers@0.5.21))
     transitivePeerDependencies:
@@ -1678,26 +1691,26 @@ snapshots:
 
   ansi-styles@6.2.3: {}
 
-  babel-plugin-jsx-dom-expressions@0.40.7(@babel/core@7.29.7):
+  babel-plugin-jsx-dom-expressions@0.40.7(@babel/core@7.29.7(supports-color@7.2.0)):
     dependencies:
-      '@babel/core': 7.29.7
+      '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/helper-module-imports': 7.18.6
-      '@babel/plugin-syntax-jsx': 7.28.6(@babel/core@7.29.7)
+      '@babel/plugin-syntax-jsx': 7.28.6(@babel/core@7.29.7(supports-color@7.2.0))
       '@babel/types': 7.29.0
       html-entities: 2.3.3
       parse5: 7.3.0
 
-  babel-plugin-vue-jsx-hmr@1.0.0:
+  babel-plugin-vue-jsx-hmr@1.0.0(supports-color@7.2.0):
     dependencies:
-      '@babel/core': 7.29.7
-      '@vue/babel-plugin-jsx': 1.5.0(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      '@vue/babel-plugin-jsx': 1.5.0(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
     transitivePeerDependencies:
       - supports-color
 
-  babel-preset-solid@1.9.12(@babel/core@7.29.7)(solid-js@1.9.13):
+  babel-preset-solid@1.9.12(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.13):
     dependencies:
-      '@babel/core': 7.29.7
-      babel-plugin-jsx-dom-expressions: 0.40.7(@babel/core@7.29.7)
+      '@babel/core': 7.29.7(supports-color@7.2.0)
+      babel-plugin-jsx-dom-expressions: 0.40.7(@babel/core@7.29.7(supports-color@7.2.0))
     optionalDependencies:
       solid-js: 1.9.13
 
@@ -1745,9 +1758,11 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@7.2.0):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 7.2.0
 
   eastasianwidth@0.2.0: {}
 
@@ -1891,10 +1906,10 @@ snapshots:
       seroval: 1.5.4
       seroval-plugins: 1.5.4(seroval@1.5.4)
 
-  solid-refresh@0.6.3(solid-js@1.9.13):
+  solid-refresh@0.6.3(solid-js@1.9.13)(supports-color@7.2.0):
     dependencies:
       '@babel/generator': 7.29.1
-      '@babel/helper-module-imports': 7.28.6
+      '@babel/helper-module-imports': 7.28.6(supports-color@7.2.0)
       '@babel/types': 7.29.0
       solid-js: 1.9.13
     transitivePeerDependencies:
@@ -1929,6 +1944,8 @@ snapshots:
   tslib@2.8.1: {}
 
   typescript@6.0.3: {}
+
+  undici-types@8.3.0: {}
 
   update-browserslist-db@1.2.3(browserslist@4.28.2):
     dependencies:
