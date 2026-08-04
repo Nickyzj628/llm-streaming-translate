@@ -63,9 +63,6 @@ function handleSelectionChange(): void {
 }
 
 function startTranslate(_text: string): void {
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	void _text;
-
 	// 若已有翻译进行中，先取消前一个
 	if (isTranslating) {
 		currentTranslator?.destroy();
@@ -99,6 +96,7 @@ function startTranslate(_text: string): void {
 		if (msg.type === "CHUNK" && msg.chunk) {
 			currentTranslator?.appendChunk(msg.chunk);
 		} else if (msg.type === "DONE") {
+			// finish() 内部做段数校验：对齐则标记完成，错位则恢复原文
 			currentTranslator?.finish();
 			finish();
 		} else if (msg.type === "ERROR") {

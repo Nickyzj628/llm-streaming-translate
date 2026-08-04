@@ -14,18 +14,23 @@ export interface InlineTranslatorController {
 interface TextNodeInfo {
 	node: Text;
 	parent: Element;
+	/** true 表示该节点位于不应翻译的元素（pre/code 等）内，译文应原样保留原文 */
+	preserve: boolean;
 }
 
-/** 可设定为不应翻译的元素标签名集合 */
-const SKIP_TAGS = new Set(["pre", "code", "kbd", "samp", "var"]);
+/** 不翻译但须原样保留原文的元素标签名集合（原文发给 LLM 作上下文，强制保留） */
+const PRESERVE_TAGS = new Set(["pre", "code", "kbd", "samp", "var"]);
 
-/** 检查节点是否在不应翻译的元素内部 */
-function isInsideSkippedElement(node: Node): boolean {
+/** 保留段的标记，用于让 LLM 识别“不要翻译、原样复制”的段 */
+const NO_TRANSLATE_TAG = "NO_TRANSLATE";
+
+/** 检查节点是否位于需要原样保留的元素（pre/code 等）内部 */
+function isInsidePreservedElement(node: Node): boolean {
 	let current: Node | null = node;
 	while (current) {
 		if (current.nodeType === Node.ELEMENT_NODE) {
 			const tag = (current as Element).tagName.toLowerCase();
-			if (SKIP_TAGS.has(tag)) return true;
+			if (PRESERVE_TAGS.has(tag)) return true;
 		}
 		current = current.parentElement;
 	}
@@ -52,11 +57,6 @@ function extractTextNodes(range: Range): {
 	let node = walker.nextNode() as Text | null;
 
 	while (node) {
-		if (isInsideSkippedElement(node)) {
-			node = walker.nextNode() as Text | null;
-			continue;
-		}
-
 		if (range.intersectsNode(node)) {
 			const text = node.textContent ?? "";
 			let segment: string;
@@ -78,8 +78,15 @@ function extractTextNodes(range: Range): {
 				continue;
 			}
 
-			nodes.push({ node, parent: node.parentElement! });
-			segments.push(segment);
+			// preserve 段（pre/code/kbd/samp/var 内）：不跳过，仍纳入分段，
+			// 但用 <NO_TRANSLATE> 包裹，让 LLM 把它当上下文看且原样保留
+			const preserve = isInsidePreservedElement(node);
+			nodes.push({ node, parent: node.parentElement!, preserve });
+			segments.push(
+				preserve
+					? `<${NO_TRANSLATE_TAG}>${segment}</${NO_TRANSLATE_TAG}>`
+					: segment,
+			);
 		}
 
 		node = walker.nextNode() as Text | null;
@@ -133,6 +140,9 @@ export function createInlineTranslator(
 
 	injectStyles(parent);
 
+	// 缓存各节点原文：LLM 输出段数与节点数不一致时，恢复原文避免错位破坏页面
+	const originalTexts = nodes.map((info) => info.node.textContent ?? "");
+
 	let buffer = "";
 	let currentNodeIndex = 0;
 	let hasReceivedFirstChunk = false;
@@ -142,7 +152,19 @@ export function createInlineTranslator(
 		const info = nodes[index];
 		if (!info?.node.isConnected) return;
 
-		info.node.textContent = text;
+		// preserve 段（pre/code 等）写回时剥掉 <NO_TRANSLATE> 标记，恢复原文
+		const content = info.preserve
+			? text.replace(new RegExp(`</?${NO_TRANSLATE_TAG}>`, "g"), "")
+			: text;
+		info.node.textContent = content;
+	}
+
+	function restoreOriginalTexts(): void {
+		for (let i = 0; i < nodes.length; i++) {
+			const info = nodes[i];
+			if (!info?.node.isConnected) continue;
+			info.node.textContent = originalTexts[i] ?? "";
+		}
 	}
 
 	return {
@@ -178,9 +200,17 @@ export function createInlineTranslator(
 				writeToNode(currentNodeIndex, buffer);
 			}
 
-			// 如果 LLM 输出的段数少于节点数，把剩余节点清空
-			for (let i = currentNodeIndex + 1; i < nodes.length; i++) {
-				writeToNode(i, "");
+			// 段数校验：LLM 输出的段数必须与节点数一致（‖ 分隔符数量对齐），
+			// 否则视为协议错位——恢复原文，避免错位写回破坏页面内容
+			if (currentNodeIndex + 1 !== nodes.length) {
+				restoreOriginalTexts();
+				for (const info of nodes) {
+					if (info.parent) {
+						info.parent.classList.remove("llm-translating");
+					}
+				}
+				buffer = "";
+				return;
 			}
 
 			// 移除 "翻译中" class，添加 "翻译完成" class
