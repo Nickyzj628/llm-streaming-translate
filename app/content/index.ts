@@ -98,10 +98,6 @@ function startTranslate(_text: string): void {
 		const msg = message as StreamTranslatePortMessage;
 		if (msg.type === "CHUNK" && msg.chunk) {
 			currentTranslator?.appendChunk(msg.chunk);
-		} else if (msg.type === "REASONING") {
-			// 原地替换模式下忽略推理过程
-		} else if (msg.type === "USAGE") {
-			// 原地替换模式下忽略 token 计数
 		} else if (msg.type === "DONE") {
 			currentTranslator?.finish();
 			finish();

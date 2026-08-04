@@ -22,8 +22,8 @@ related_files:
 - Framework: addfox
 - Name: LLM Streaming Translator
 - Description: 基于大模型的网页划词流式翻译插件
-- Version: 1.2.1
-- Framework version: 0.2.4
+- Version: 1.2.2
+- Framework version: 0.2.5
 - Manifest version: 3
 
 ## 2. Permissions
@@ -42,19 +42,19 @@ related_files:
 
 ```text
 background/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/background/index.ts
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/background/index.ts
 └── 📁 JS/
     └── background/index.js
     ⚙️  html: false
 
 content/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/content/index.ts
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/content/index.ts
 └── 📁 JS/
     └── content/index.js
     ⚙️  html: false
 
 options/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/options/index.tsx
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/options/index.tsx
 ├── 📁 JS/
 │   ├── options/index.js
 │   └── static/js/shared-vendor.js

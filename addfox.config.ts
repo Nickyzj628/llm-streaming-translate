@@ -4,7 +4,7 @@ import { defineConfig } from "addfox";
 
 const baseManifest = {
 	name: "LLM Streaming Translator",
-	version: "1.2.1",
+	version: "1.2.2",
 	manifest_version: 3,
 	description: "基于大模型的网页划词流式翻译插件",
 	permissions: ["activeTab", "storage"],

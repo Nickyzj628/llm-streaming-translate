@@ -1,4 +1,4 @@
-import { chatCompletions } from "@nickyzj2023/utils";
+import { chatCompletions, defineModel } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import { getStorage } from "@/utils/storage";
 
@@ -10,7 +10,7 @@ export async function streamTranslateOverPort(
 		baseUrl,
 		model: modelName,
 		apiKey,
-		body: customBody,
+		body,
 		targetLang,
 	} = await getStorage(["baseUrl", "model", "apiKey", "body", "targetLang"]);
 
@@ -30,10 +30,10 @@ export async function streamTranslateOverPort(
 		return;
 	}
 
-	let extraBody: Record<string, unknown> = {};
-	if (customBody) {
+	let customBody: Record<string, unknown> = {};
+	if (body) {
 		try {
-			extraBody = JSON.parse(customBody) as Record<string, unknown>;
+			customBody = JSON.parse(body) as Record<string, unknown>;
 		} catch {
 			port.postMessage({ type: "ERROR", error: "自定义请求体 JSON 格式无效" });
 			return;
@@ -42,11 +42,12 @@ export async function streamTranslateOverPort(
 
 	try {
 		const result = await chatCompletions(
-			{
+			defineModel({
 				baseUrl: baseUrl.replace(/\/$/, ""),
 				apiKey,
 				model: modelName,
-			},
+				customBody,
+			}),
 			[
 				{
 					role: "system",
@@ -75,27 +76,12 @@ Output: "她说：\u2016你好世界\u2016然后笑了。"`,
 					content: text,
 				},
 			],
-			{
-				stream: true,
-				...extraBody,
-			},
+			{ stream: true },
 		);
 
-		for await (const { content, reasoningContent, usage } of result) {
-			if (reasoningContent) {
-				port.postMessage({ type: "REASONING", reasoning: reasoningContent });
-			}
+		for await (const { content } of result) {
 			if (content) {
 				port.postMessage({ type: "CHUNK", chunk: content });
-			}
-			if (usage) {
-				port.postMessage({
-					type: "USAGE",
-					usage: {
-						promptTokens: usage.prompt_tokens ?? 0,
-						completionTokens: usage.completion_tokens ?? 0,
-					},
-				});
 			}
 		}
 
