@@ -23,13 +23,13 @@
 
 ### 翻译流程（选词 → 流式原地替换）
 1. `app/content/index.ts`：监听选区，弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。
-2. 点击后 `createInlineTranslator(range, shadowRoot)`（`app/content/InlineTranslator.ts`）提取选区内的文本节点，用 `‖`（U+2016）连接各段文本，经**长连接端口 `stream-translate`** 发给 background。
-3. `app/background/StreamTranslator.ts` 用 `@nickyzj2023/utils` 的 `chatCompletions`（**不是** OpenAI 官方 SDK）流式请求，把 `CHUNK` / `REASONING` / `USAGE` / `DONE` / `ERROR` 经端口回传。
-4. 内容脚本按 `‖` 拆分流式 chunk，逐段写回对应 DOM 文本节点，并切换 `llm-translating` / `llm-translated` CSS class。
+2. 点击后 `createInlineTranslator(range, shadowRoot)`（`app/content/InlineTranslator.ts`）提取选区内的文本节点，**每行一个文本节点**构造协议文本（未翻译部分用 `<NO_TRANSLATE>` 标出，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。
+3. `app/background/StreamTranslator.ts` 用 `@nickyzj2023/utils` 的 `chatCompletions`（**不是** OpenAI 官方 SDK）流式请求，把 `CHUNK` / `DONE` / `ERROR` 经端口回传。
+4. 内容脚本按 `\n` 行分隔拆分流式 chunk，逐行写回对应锚点（**只取标签外译文**，preserve 段保持原文），并切换 `llm-translating` / `llm-translated` CSS class。
 
 ### 最容易踩的坑
-- **`‖`（U+2016）分段对齐协议**：`StreamTranslator.ts` 的系统提示要求模型输出含与输入**完全相同数量**的分隔符。改 prompt 或 `InlineTranslator.ts` 的分段逻辑必须两端同步，否则译文错位。
-- **消息协议**：端口消息类型定义在 `app/types/messages.ts`（START/CHUNK/REASONING/USAGE/DONE/ERROR），改动需同步 background 与 content 两侧。
+- **`<NO_TRANSLATE>` 行对齐协议**：`InlineTranslator.ts` 每行 = 一个文本节点（行数 = 节点数），未选中部分与 `pre/code` 等 preserve 节点用 `<NO_TRANSLATE>` 标出；`StreamTranslator.ts` 的 system prompt 要求模型输出**行数与输入完全相同**、**保留标签结构**（标签内逐字照抄、标签外翻译）。写回时**只取标签外译文**写入选中锚点，标签内容即使被模型翻译也会被丢弃（上下文由 DOM 原文兜底）；preserve 段写回原文、不依赖模型。改 prompt 或 `InlineTranslator.ts` 的分段/行构造逻辑必须两端同步，否则译文错位。行解析逻辑（`extractTranslatedContent`）在 `app/utils/protocol.ts` 共享，content 写回与 options 测试显示两端共用，改动需同步。
+- **消息协议**：端口消息类型定义在 `app/types/messages.ts`（START/CHUNK/DONE/ERROR），改动需同步 background 与 content 两侧。
 - **设置存储**：`browser.storage.local`，schema 在 `app/types/storage.ts`（baseUrl/model/apiKey/body/targetLang）。`body` 是任意 JSON，会被合并进 `/chat/completions` 请求体，修改时需保证 JSON 合法。
 - **模型列表**：选项页从 `{baseUrl}/models` 拉取，请求头 `Authorization: Bearer <apiKey>`。
 - **manifest 权限**：只有 `activeTab` + `storage`，通过 `optional_host_permissions`（http/https）访问 LLM 端点；新增 API 域名时沿用该模式。

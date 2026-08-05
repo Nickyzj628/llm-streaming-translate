@@ -1,8 +1,6 @@
 export interface StreamTranslateStart {
 	type: "START";
 	text: string;
-	/** 文本节点段数，用于 LLM 分段对齐；为空时退化为普通翻译 */
-	segmentCount?: number;
 }
 
 export interface StreamTranslateChunk {

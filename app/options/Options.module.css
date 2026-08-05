@@ -174,3 +174,61 @@
 .hiddenInput {
 	display: none;
 }
+
+/* 测试翻译板块：与导入导出同款卡片风格，位于表单与导入导出之间 */
+.testPanel {
+	margin-top: var(--space5);
+	background: var(--white);
+	border-radius: var(--radiusLg);
+	padding: var(--space5) var(--space6);
+	box-shadow: var(--shadowElevated);
+}
+
+.testPanel h3 {
+	font-size: 16px;
+	font-weight: var(--semibold);
+	margin: 0 0 var(--space2);
+	color: var(--black);
+	letter-spacing: -0.02em;
+}
+
+.testActions {
+	display: flex;
+	gap: var(--space3);
+	margin-top: var(--space3);
+}
+
+/* 文本节点输入列表：每个 li 一个 input，垂直排列 */
+.testNodeList {
+	list-style: none;
+	margin: var(--space3) 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space2);
+}
+
+.textNodeInput {
+	width: 100%;
+	box-sizing: border-box;
+	padding: 10px 12px;
+	font-size: 15px;
+	font-family: var(--fontFamily);
+	background: var(--white);
+	color: var(--black);
+	border-radius: var(--radiusMd);
+	box-shadow: var(--shadowBorder);
+	transition: box-shadow var(--transitionBase);
+}
+
+.textNodeInput:hover {
+	box-shadow: var(--shadowBorderHover);
+}
+
+.textNodeInput:focus-visible {
+	box-shadow: var(--shadowFocus);
+}
+
+.textNodeInput::placeholder {
+	color: var(--greyLight);
+}

@@ -47,22 +47,28 @@ export async function streamTranslateOverPort(
 		}> = [
 			{
 				role: "system",
-				content: `You are a concise translation model. Translate the user's text into ${targetLang}.
+				content: `你是一个翻译模型。把用户输入的文字翻译成 ${targetLang}。
 
-The input is a list of lines. Each line is formatted as "- <TARGET>...</TARGET>" plus optional context text outside the tags. The part inside <TARGET> is the ONLY thing to translate — everything else is context for understanding only, never translate it.
+用户输入是多行文本，每行对应网页中被选中的一段文字。必须严格遵守以下规则：
 
-CRITICAL RULE: Output EXACTLY the same number of lines as the input, in the same order. Each output line is the translation of the corresponding <TARGET> part, prefixed with "- ". Do NOT output the <TARGET> tags, the context text, or any explanations.
+【最重要】输出行数必须和输入行数完全一致，一行对应一行，按顺序一一对应。禁止把多行合并成一行，禁止漏行，禁止额外加行。即使某一行只有半个单词、翻译出来不自然，也要单独输出一行。
 
-Example:
-Input:
-- <TARGET>Example Game</TARGET>
-- <TARGET>press</TARGET> Enter
-- <TARGET>to start</TARGET>
+每行输出以 "- " 开头，并且【必须保留】输入中的 <NO_TRANSLATE>...</NO_TRANSLATE> 标签结构：标签内的内容逐字照抄、不要翻译，标签外的内容才是需要翻译的部分。标签结构要与输入一一对应。
 
-Output:
-- 示例游戏
-- 按下
-- 开始`,
+如果某一行是不完整的片段，按字面意思翻译即可，不要补全内容、不要合并前后行。
+
+只输出译文，不要输出任何解释、提示或原文。
+
+示例：
+输入：
+- Build new UI.
+- <NO_TRANSLATE>Press </NO_TRANSLATE>Enter<NO_TRANSLATE> to start</NO_TRANSLATE>
+- <NO_TRANSLATE>design.md</NO_TRANSLATE>
+
+输出：
+- 构建新的UI。
+- <NO_TRANSLATE>Press </NO_TRANSLATE>按下<NO_TRANSLATE> to start</NO_TRANSLATE>
+- <NO_TRANSLATE>design.md</NO_TRANSLATE>`,
 			},
 			{
 				role: "user",

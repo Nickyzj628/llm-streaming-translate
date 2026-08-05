@@ -7,6 +7,7 @@ import Input from "../components/Input/Input";
 import Toast from "../components/Toast/Toast";
 import { useToast } from "../hooks/useToast";
 import type { StreamTranslatePortMessage } from "../types/messages";
+import { stripNoTranslateTags } from "../utils/protocol";
 import { getAllStorage, setStorage } from "../utils/storage";
 import styles from "./Options.module.css";
 
@@ -28,13 +29,13 @@ const PRESETS: Preset[] = [
 	{
 		name: "OpenRouter",
 		baseUrl: "https://openrouter.ai/api/v1",
-		model: "~openai/gpt-mini-latest",
+		model: "openai/gpt-5.6-luna",
 		body: '{"reasoning_effort": "minimal"}',
 	},
 	{
 		name: "Google AI Studio",
 		baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-		model: "models/gemma-4-31b-it",
+		model: "gemma-4-26b-a4b-it",
 		body: '{"reasoning_effort": "minimal"}',
 	},
 	{
@@ -44,6 +45,15 @@ const PRESETS: Preset[] = [
 		apiKey: "",
 		body: '{"chat_template_kwargs": {"enable_thinking": false}}',
 	},
+];
+
+// 测试板块的默认文本节点：与 StreamTranslator.ts 的 system prompt 示例保持一致，
+// 覆盖三种协议形态（整行翻译 / 部分选中 / 全照抄）。
+// 每个元素 = 一个文本节点（协议的一行，翻译时逐行写回）
+const TEST_SAMPLE = [
+	"- From Wikipedia, the free encyclopedia.",
+	"- <NO_TRANSLATE>The quick brown fox jumps over the lazy dog</NO_TRANSLATE> is an English-language pangram",
+	"- it contains all 26 letters of the English alphabet",
 ];
 
 const App: Component = () => {
@@ -57,6 +67,8 @@ const App: Component = () => {
 	const { toast, showToast } = useToast();
 	let fileInputRef: HTMLInputElement | undefined;
 	const [isTesting, setIsTesting] = createSignal(false);
+	// 测试板块的文本节点列表（每个元素 = 一行协议输入），翻译过程中被逐行流式替换为译文
+	const [testSource, setTestSource] = createSignal<string[]>(TEST_SAMPLE);
 	let testPortRef: browser.Runtime.Port | null = null;
 	let testTimeout: ReturnType<typeof setTimeout> | null = null;
 	let fetchAbortController: AbortController | null = null;
@@ -154,10 +166,32 @@ const App: Component = () => {
 		fetchModels(baseUrl(), apiKey(), model());
 	};
 
+	// 更新指定文本节点的输入内容（Solid 不可变更新：map 出新数组）
+	const updateTestLine = (index: number, value: string): void => {
+		setTestSource((prev) => prev.map((line, i) => (i === index ? value : line)));
+	};
+
+	// 添加一个空的文本节点输入框
+	const addTestLine = (): void => {
+		setTestSource((prev) => [...prev, ""]);
+	};
+
+	// 复原：把测试输入重置为默认示例 TEST_SAMPLE
+	const resetTestSource = (): void => {
+		setTestSource(TEST_SAMPLE);
+	};
+
 	const handleTestTranslation = (): void => {
 		if (isTesting()) return;
 		if (!baseUrl() || !model()) {
 			showToast("请先填写 API Base URL 和模型", "error");
+			return;
+		}
+
+		// 记住原文行数组：翻译失败/超时时恢复，模拟真实划词翻译失败回滚原文的行为
+		const originalLines = testSource();
+		if (originalLines.every((line) => line.trim() === "")) {
+			showToast("请先输入原文", "error");
 			return;
 		}
 
@@ -174,6 +208,7 @@ const App: Component = () => {
 
 		testTimeout = setTimeout(() => {
 			showToast("测试翻译超时", "error");
+			setTestSource(originalLines);
 			setIsTesting(false);
 			port.disconnect();
 			testPortRef = null;
@@ -184,12 +219,28 @@ const App: Component = () => {
 			const msg = message as StreamTranslatePortMessage;
 			if (msg.type === "CHUNK") {
 				result += msg.chunk;
+				// 流式替换：把累积输出按行去掉标签字符（内容保留）后逐行写回对应输入框，
+				// 模拟真实划词页面中"未选中部分保持原文 + 选中部分被译文替换"的整体效果。
+				// 注意这里不能用 extractTranslatedContent（它会丢弃标签内容，那是 content 端
+				// 写回选中锚点用的；测试板块没有 DOM 原文兜底，需要保留标签内容）。
+				const translatedLines = result
+					.split("\n")
+					.map((line) => stripNoTranslateTags(line));
+				setTestSource((prev) =>
+					prev.map((original, i) => {
+						const translated = translatedLines[i];
+						// 模型尚未输出该行（越界）或输出为空行时不写回，保持原文
+						return translated !== undefined && translated.trim() !== ""
+							? translated
+							: original;
+					}),
+				);
 			} else if (msg.type === "DONE") {
 				if (testTimeout) {
 					clearTimeout(testTimeout);
 					testTimeout = null;
 				}
-				showToast(`翻译结果：${result}`, "success");
+				showToast("翻译完成", "success");
 				setIsTesting(false);
 				port.disconnect();
 				testPortRef = null;
@@ -199,21 +250,15 @@ const App: Component = () => {
 					testTimeout = null;
 				}
 				showToast(`测试失败：${msg.error}`, "error");
+				// 失败恢复原文行，避免输入框残留半截译文
+				setTestSource(originalLines);
 				setIsTesting(false);
 				port.disconnect();
 				testPortRef = null;
 			}
 		});
 
-		port.postMessage({
-			type: "START",
-			// 模拟划词协议的多行输入：第一行整行 TARGET（被翻译），第二行只译中间的
-			// 句子、其余作上下文。验证“多行翻译 + 行对齐 + 只译 TARGET”
-			text: [
-				"- From Wikipedia, the free <TARGET>encyclopedia</TARGET>.",
-				'- <TARGET>"The quick brown fox jumps over the lazy dog"</TARGET> is a pangram.',
-			].join("\n"),
-		});
+		port.postMessage({ type: "START", text: originalLines.join("\n") });
 	};
 
 	const handleSave = async (e: Event): Promise<void> => {
@@ -423,20 +468,63 @@ const App: Component = () => {
 				</div>
 
 				<div class={styles.actions}>
-					<Button
-						type="button"
-						variant="secondary"
-						size="large"
-						onClick={handleTestTranslation}
-						disabled={isTesting()}
-					>
-						{isTesting() ? "测试中..." : "测试翻译"}
-					</Button>
 					<Button type="submit" variant="primary" size="large">
 						保存设置
 					</Button>
 				</div>
 			</form>
+
+			<div class={styles.testPanel}>
+				<h3>测试翻译</h3>
+				<p class={styles.hint}>
+					每个输入框代表一个文本节点，{"<NO_TRANSLATE>"}标出不翻译的部分。
+				</p>
+				<ul class={styles.testNodeList}>
+					<For each={testSource()}>
+						{(line, i) => (
+							<li>
+								<input
+									type="text"
+									class={styles.textNodeInput}
+									spellcheck={false}
+									autocomplete="off"
+									value={line}
+									onInput={(e) => updateTestLine(i(), e.currentTarget.value)}
+								/>
+							</li>
+						)}
+					</For>
+				</ul>
+				<div class={styles.testActions}>
+					<Button
+						type="button"
+						variant="secondary"
+						size="medium"
+						onClick={handleTestTranslation}
+						disabled={isTesting()}
+					>
+						{isTesting() ? "翻译中..." : "开始翻译"}
+					</Button>
+					<Button
+						type="button"
+						variant="secondary"
+						size="medium"
+						onClick={addTestLine}
+						disabled={isTesting()}
+					>
+						添加文本节点
+					</Button>
+					<Button
+						type="button"
+						variant="secondary"
+						size="medium"
+						onClick={resetTestSource}
+						disabled={isTesting()}
+					>
+						复原
+					</Button>
+				</div>
+			</div>
 
 			<div class={styles.importExport}>
 				<h3>备份与恢复</h3>
