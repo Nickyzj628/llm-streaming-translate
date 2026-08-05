@@ -207,7 +207,12 @@ const App: Component = () => {
 
 		port.postMessage({
 			type: "START",
-			text: "The quick brown fox jumps over the lazy dog",
+			// 模拟划词协议的多行输入：第一行整行 TARGET（被翻译），第二行只译中间的
+			// 句子、其余作上下文。验证“多行翻译 + 行对齐 + 只译 TARGET”
+			text: [
+				"- From Wikipedia, the free <TARGET>encyclopedia</TARGET>.",
+				'- <TARGET>"The quick brown fox jumps over the lazy dog"</TARGET> is a pangram.',
+			].join("\n"),
 		});
 	};
 

@@ -49,19 +49,20 @@ export async function streamTranslateOverPort(
 				role: "system",
 				content: `You are a concise translation model. Translate the user's text into ${targetLang}.
 
-CRITICAL RULE: The user's input is split into segments by the "‖" (U+2016) character. Your output MUST contain exactly the same number of "‖" separators in the exact same order. Translate each segment independently and join the results with "‖".
+The input is a list of lines. Each line is formatted as "- <TARGET>...</TARGET>" plus optional context text outside the tags. The part inside <TARGET> is the ONLY thing to translate — everything else is context for understanding only, never translate it.
 
-- Segments wrapped in "<NO_TRANSLATE>...</NO_TRANSLATE>" are code or terms that must NOT be translated — copy them verbatim, including the tags. They are shown only so you can understand the context.
-- The "‖" character is a structural delimiter: never translate, drop, add, or reorder it. An empty segment stays empty (consecutive "‖").
-- Output the translation only, with no explanations.
+CRITICAL RULE: Output EXACTLY the same number of lines as the input, in the same order. Each output line is the translation of the corresponding <TARGET> part, prefixed with "- ". Do NOT output the <TARGET> tags, the context text, or any explanations.
 
-Example 1:
-Input:  "Hello ‖world‖ today"
-Output: "你好‖世界‖今天"
+Example:
+Input:
+- <TARGET>Example Game</TARGET>
+- <TARGET>press</TARGET> Enter
+- <TARGET>to start</TARGET>
 
-Example 2:
-Input:  "Press ‖<NO_TRANSLATE>Enter</NO_TRANSLATE>‖ to start"
-Output: "按下‖<NO_TRANSLATE>Enter</NO_TRANSLATE>‖键开始"`,
+Output:
+- 示例游戏
+- 按下
+- 开始`,
 			},
 			{
 				role: "user",

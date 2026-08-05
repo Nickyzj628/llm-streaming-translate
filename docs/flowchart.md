@@ -77,8 +77,8 @@ sequenceDiagram
 
     U->>FB: 点击按钮
     FB->>C: onClick
-    C->>IT: createInlineTranslator
-    IT-->>C: getText()<br/>seg0‖seg1‖...
+    C->>IT: createInlineTranslator<br/>(提取+包 span 锚点)
+    IT-->>C: getText()<br/>每行一个 <TARGET><br/>行1\n行2\n...
     C->>B: connect stream-translate
     C->>B: START
 
@@ -91,13 +91,13 @@ sequenceDiagram
         LLM-->>B: content
         B->>C: CHUNK
         C->>IT: appendChunk
-        IT->>IT: 按 ‖ 切分写节点
+        IT->>IT: 按换行切分写入 span 锚点
     end
 
     LLM-->>B: 流结束
     B->>C: DONE
     C->>IT: finish
-    IT->>IT: flush + 切样式
+    IT->>IT: flush + unwrap span + 切样式
 ```
 
 ---
@@ -152,13 +152,14 @@ sequenceDiagram
 
 ### 4.1 分段对齐协议
 
-- **content**：`InlineTranslator.ts` 把选区内每个 `Text` 节点作为一个 segment，用 `‖`（U+2016）拼接。
-- **background**：系统提示要求 LLM 输出**相同数量**的 `‖` 分隔符，顺序一致。
-- **content**：收到 `CHUNK` 后按 `‖` 切分，逐段写回对应节点。
-- **保留段**：位于 `pre/code/kbd/samp/var` 内的文本节点**不跳过**，作为 segment 用 `<NO_TRANSLATE>...</NO_TRANSLATE>` 包裹后一并发送。LLM 将其视为上下文（帮助理解语境、提高翻译质量），但要求**原样复制**（含标签）；content 写回时剥掉 `<NO_TRANSLATE>` 标记恢复原文。
-- **段数校验（容错）**：`createInlineTranslator` 提取时缓存各节点原文；`finish()` 时若已写入段数 ≠ 节点数（LLM 未遵守 `‖` 数量协议），**恢复原文**并仅移除 `llm-translating` class，不再把剩余节点清空——防止错位写回破坏页面。
+- **content**：`InlineTranslator.ts` 两阶段提取——先收集选区内每个 `Text` 节点的选中范围（不碰 DOM，避免 live `TreeWalker` 漂移），再统一用 `splitText()` 拆出选中部分并包 `<span class="llm-selected" style="display: contents">` 锚点（纯定位用、无视觉、不影响布局）。
+- **发送文本**：**每行一个 `<TARGET>`**，行 = 节点完整文本（上下文补全），选中部分用 `<TARGET>...</TARGET>` 包裹；无需翻译的节点（`pre/code/kbd/samp/var` 内）**不占行**，内容紧跟上一个 `<TARGET>` 行尾作上下文。
+- **background**：系统提示要求 LLM 输出**与输入相同行数**（每行一个译文、按行对齐），每行只输出对应 `<TARGET>` 的译文（不带标签、不带上下文）。
+- **content 写回**：收到 `CHUNK` 按换行切分，译文写入对应锚点（`span.textContent`）；**非选中部分 DOM 全程不动**。
+- **unwrap 恢复**：翻译成功时 `span.replaceWith(译文文本)` 恢复原始 DOM 结构，`llm-translated` class 加在父元素；页面结构不留残渣。
+- **行数校验（容错）**：`finish()` 时若已写入行数 ≠ 锚点数（LLM 未遵守行数协议），**恢复原文**（unwrap 回选中部分原文）并仅移除 `llm-translating` class——防止错位写回破坏页面。
 
-> ⚠️ 修改 prompt 或 `InlineTranslator.ts` 的分段逻辑必须两端同步，否则译文错位。
+> ⚠️ 修改 prompt 或 `InlineTranslator.ts` 的分段/标记逻辑必须两端同步，否则译文错位。
 
 ### 4.2 端口消息协议
 
