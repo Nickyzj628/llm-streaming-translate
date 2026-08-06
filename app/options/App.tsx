@@ -7,7 +7,7 @@ import Input from "../components/Input/Input";
 import Toast from "../components/Toast/Toast";
 import { useToast } from "../hooks/useToast";
 import type { StreamTranslatePortMessage } from "../types/messages";
-import { stripNoTranslateTags } from "../utils/protocol";
+import { extractTranslatedContent } from "../utils/protocol";
 import { getAllStorage, setStorage } from "../utils/storage";
 import styles from "./Options.module.css";
 
@@ -48,12 +48,12 @@ const PRESETS: Preset[] = [
 ];
 
 // 测试板块的默认文本节点：与 StreamTranslator.ts 的 system prompt 示例保持一致，
-// 覆盖三种协议形态（整行翻译 / 部分选中 / 全照抄）。
-// 每个元素 = 一个文本节点（协议的一行，翻译时逐行写回）
+// 覆盖两种协议形态（整段翻译 / 含占位符的不翻译内容）。
+// 每个元素 = 一个文本节点（协议的一段，翻译时逐段写回）
 const TEST_SAMPLE = [
-	"- From Wikipedia, the free encyclopedia.",
-	"- <NO_TRANSLATE>The quick brown fox jumps over the lazy dog</NO_TRANSLATE> is an English-language pangram",
-	"- it contains all 26 letters of the English alphabet",
+	"The quick brown fox jumps over the lazy dog",
+	"Use [[0]] to create a highlighter synchronously",
+	"it contains all 26 letters of the English alphabet",
 ];
 
 const App: Component = () => {
@@ -67,7 +67,7 @@ const App: Component = () => {
 	const { toast, showToast } = useToast();
 	let fileInputRef: HTMLInputElement | undefined;
 	const [isTesting, setIsTesting] = createSignal(false);
-	// 测试板块的文本节点列表（每个元素 = 一行协议输入），翻译过程中被逐行流式替换为译文
+	// 测试板块的文本节点列表（每个元素 = 一段协议输入，段间用 ¶ 分隔），翻译过程中被逐段流式替换为译文
 	const [testSource, setTestSource] = createSignal<string[]>(TEST_SAMPLE);
 	let testPortRef: browser.Runtime.Port | null = null;
 	let testTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -219,13 +219,13 @@ const App: Component = () => {
 			const msg = message as StreamTranslatePortMessage;
 			if (msg.type === "CHUNK") {
 				result += msg.chunk;
-				// 流式替换：把累积输出按行去掉标签字符（内容保留）后逐行写回对应输入框，
-				// 模拟真实划词页面中"未选中部分保持原文 + 选中部分被译文替换"的整体效果。
-				// 注意这里不能用 extractTranslatedContent（它会丢弃标签内容，那是 content 端
-				// 写回选中锚点用的；测试板块没有 DOM 原文兜底，需要保留标签内容）。
+				// 流式替换：把累积输出按段"删除占位符"后逐段写回对应输入框，
+				// 模拟真实划词页面中"选中部分被译文替换"的整体效果。
+				// 占位符对应未选中/preserve 内容，测试板块没有 DOM 兜底，
+				// 这里直接删掉占位符即可（与 content 端写回逻辑一致）。
 				const translatedLines = result
-					.split("\n")
-					.map((line) => stripNoTranslateTags(line));
+					.split("¶")
+					.map((line) => extractTranslatedContent(line));
 				setTestSource((prev) =>
 					prev.map((original, i) => {
 						const translated = translatedLines[i];
@@ -258,7 +258,7 @@ const App: Component = () => {
 			}
 		});
 
-		port.postMessage({ type: "START", text: originalLines.join("\n") });
+		port.postMessage({ type: "START", text: originalLines.join("¶") });
 	};
 
 	const handleSave = async (e: Event): Promise<void> => {
@@ -477,7 +477,7 @@ const App: Component = () => {
 			<div class={styles.testPanel}>
 				<h3>测试翻译</h3>
 				<p class={styles.hint}>
-					每个输入框代表一个文本节点，{"<NO_TRANSLATE>"}标出不翻译的部分。
+					每个输入框代表一个文本节点，{"[[数字]]"}占位符代表不翻译的内容。
 				</p>
 				<ul class={styles.testNodeList}>
 					<For each={testSource()}>

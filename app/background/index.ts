@@ -18,10 +18,12 @@ browser.runtime.onConnect.addListener((port) => {
 
 	const messageHandler = (message: StreamTranslatePortMessage) => {
 		if (message.type === "START") {
-			streamTranslateOverPort(message.text, port).catch((err) => {
-				const errorMessage = err instanceof Error ? err.message : String(err);
-				port.postMessage({ type: "ERROR", error: errorMessage });
-			});
+			streamTranslateOverPort(message.text, port, message.pageMeta).catch(
+				(err) => {
+					const errorMessage = err instanceof Error ? err.message : String(err);
+					port.postMessage({ type: "ERROR", error: errorMessage });
+				},
+			);
 		}
 	};
 

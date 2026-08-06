@@ -1,23 +1,31 @@
-import { extractTranslatedContent, NO_TRANSLATE_TAG } from "@/utils/protocol";
+import { extractTranslatedContent } from "@/utils/protocol";
 
 export interface InlineTranslatorController {
-	/** 追加译文 chunk，流式解析行分隔并写入对应锚点 */
+	/** 追加译文 chunk，流式解析段分隔并写入对应锚点 */
 	appendChunk: (chunk: string) => void;
 	/** 翻译完成：flush 缓冲区，unwrap 锚点恢复原始 DOM，切换 class */
 	finish: () => void;
 	/** 清理所有引用和辅助元素 */
 	destroy: () => void;
-	/** 返回发送给 LLM 的文本：每行一个文本节点，<NO_TRANSLATE> 内的内容不翻译、其余翻译 */
+	/** 返回发送给 LLM 的文本：每个文本节点一段，不译内容用 [[n]] 占位，段间以 ¶ 分隔，其余为待翻译文本 */
 	getText: () => string;
 }
 
 /** 选中段包裹用的锚点 class（display: contents，仅定位用，无视觉） */
 const SELECTED_CLASS = "llm-selected";
 
-/** 行分隔：每行 = 一个文本节点，输出按行数与输入对齐 */
-const LINE_BREAK = "\n";
+/** 段分隔符：每个文本节点一段，段间用单个字符 ¶ 分隔（不用换行）。
+ *  用段落标记 ¶ 而非换行的目的是：段内允许模型自由换行而不破坏"段数对齐"——
+ *  模型在长段内插入换行（改写回时按 \n 分隔会错位）不再是问题。
+ *  选 ¶ 因为它是可见字符（模型能照抄）且正文几乎不出现（避免误分段）。
+ *  与 StreamTranslator.ts 的 system prompt 必须一致（两端同步）。 */
+const SEGMENT_SEPARATOR = "¶";
 
-/** 不翻译但须原样保留原文的元素标签名集合（原文发给 LLM 作上下文，强制保留） */
+/**
+ * 不翻译但须原样保留的元素标签名集合。
+ * 这些元素内的文本（code 等）在待翻译行中不发送内容，只以 [[n]] 占位符替代；
+ * 写回时由 DOM 原文兜底，模型无需也没必要照抄。
+ */
 const PRESERVE_TAGS = new Set(["pre", "code", "kbd", "samp", "var"]);
 
 interface SegmentTarget {
@@ -112,17 +120,21 @@ function extractTextNodes(range: Range): {
 	}
 
 	// 阶段二：统一执行 DOM 操作并构造发送文本。
-	// 协议：每行 = 一个文本节点，行数 = 节点数，与 DOM 一一对应。
-	// 行内用 <NO_TRANSLATE> 标出“不翻译”部分（未选中部分 / code 等 preserve 节点），
-	// 其余部分才是唯一需要翻译的内容。模型输出时保留标签结构、翻译标签外内容，行数严格对齐；
-	// 写回时只取标签外译文（见 writeToSegment），标签内容即使被模型翻译也会被丢弃。
+	// 协议：每个文本节点 = 一段，段数 = 节点数，与 DOM 一一对应，段间用 ¶ 分隔。
+	// 段内结构：待翻译部分原样保留；"不译内容"（未选中前/后、preserve 整段）
+	// 统一替换为 [[n]] 占位符。这样模型只需照抄占位符、翻译其余部分，
+	// 无需理解任何标签结构（大幅降低本地小模型的理解负担）。
+	// 占位符无需真实原文映射：未选中部分与 preserve 段都由 DOM 原文兜底。
+	let placeholderIndex = 0;
+	const placeholder = (): string => `[[${placeholderIndex++}]]`;
+
 	for (const item of collected) {
 		const text = item.node.textContent ?? "";
 
 		if (item.preserve) {
-			// preserve 节点（code 等）整个节点都不翻译：锚点包整个节点、整行 NO_TRANSLATE 占位。
-			// 模型输出行只用于行数对齐，写回时忽略其内容、保持原文（见 writeToSegment），
-			// 这样即使模型翻译了 code 内容，页面也不会被破坏。
+			// preserve 节点（code 等）整个节点不翻译：锚点包整个节点，
+			// 行内只留一个占位符。模型照抄占位符即可；
+			// 写回时忽略模型输出、保持原文（见 writeToSegment）。
 			const span = wrapSelected(item.node, 0, text.length);
 			segments.push({
 				target: span,
@@ -130,15 +142,21 @@ function extractTextNodes(range: Range): {
 				originalText: text,
 				preserve: true,
 			});
-			rows.push(`- <${NO_TRANSLATE_TAG}>${text}</${NO_TRANSLATE_TAG}>`);
+			rows.push(placeholder());
 			continue;
 		}
 
 		// 非 preserve 节点：锚点只包选中部分，未选中部分（before/after）留在 DOM 原文里，
-		// 由 DOM 保证上下文保真（不依赖模型照抄）。
-		const before = text.slice(0, item.start);
-		const selected = text.slice(item.start, item.end);
-		const after = text.slice(item.end);
+		// 由 DOM 保证上下文保真（不依赖模型照抄）。before/after 用占位符替代，
+		// 模型只看得到占位符，不会去翻译它们。
+		//
+		// 【换行折叠】节点内可能含 \n（如 HTML 源码美化、white-space:pre 文本）。
+		// 虽然 ¶ 分隔已保证段内换行不破坏段数对齐，但保留折叠可减少段内换行噪音、
+		// 让模型聚焦翻译。因此把节点内连续换行折叠为单个空格。
+		// 换行基本是源码空白，折叠成空格视觉一致；未选中部分由 DOM 原文兜底不受影响。
+		const before = text.slice(0, item.start).replace(/\n+/g, " ");
+		const selected = text.slice(item.start, item.end).replace(/\n+/g, " ");
+		const after = text.slice(item.end).replace(/\n+/g, " ");
 		const span = wrapSelected(item.node, item.start, item.end);
 		segments.push({
 			target: span,
@@ -147,17 +165,16 @@ function extractTextNodes(range: Range): {
 			preserve: false,
 		});
 
-		// 未选中部分（before/after）用 NO_TRANSLATE 标出让模型照抄作上下文；
-		// 为空时省略标签，避免“<NO_TRANSLATE></NO_TRANSLATE>”空标签噪音。
+		// 占位符代表未选中部分（before/after），为空时省略，避免噪音。
 		rows.push(
-			`- ` +
-				(before ? `<${NO_TRANSLATE_TAG}>${before}</${NO_TRANSLATE_TAG}>` : "") +
-				selected +
-				(after ? `<${NO_TRANSLATE_TAG}>${after}</${NO_TRANSLATE_TAG}>` : ""),
+			(before ? placeholder() : "") + selected + (after ? placeholder() : ""),
 		);
 	}
 
-	const joinedText = rows.join(LINE_BREAK);
+	// 待翻译文本 = 每个文本节点用 ¶ 分隔（段数对齐协议）。
+	// 语境信息由 background 从网页元数据（title/description）注入 system prompt，
+	// 这里不再包任何上下文标记，保持输入极简、只含待翻译文本。
+	const joinedText = rows.join(SEGMENT_SEPARATOR);
 
 	return { segments, joinedText };
 }
@@ -226,7 +243,7 @@ export function createInlineTranslator(
 			return;
 		}
 
-		// 非 preserve 节点：只取模型输出行中的译文（标签外内容）写回选中锚点，
+		// 非 preserve 节点：删除占位符 [[n]] 得到纯译文写回选中锚点；
 		// 未选中部分由 DOM 原文保留，上下文保真不依赖模型。
 		const content = extractTranslatedContent(text);
 		// 内容为空（如模型只输出了 "-" 前缀或空行）时不写，避免清空锚点原文
@@ -254,48 +271,43 @@ export function createInlineTranslator(
 			}
 
 			buffer += chunk;
-			const lines = buffer.split(LINE_BREAK);
+			const segmentsArr = buffer.split(SEGMENT_SEPARATOR);
 
-			// 除最后一行外，都是完整行（一个译文 = 一个锚点）。
-			// 空行跳过：模型可能输出多余空行（含尾随换行产生的空行），
-			// 它们不参与行计数、也不写回，避免行数校验被空行干扰。
-			for (let i = 0; i < lines.length - 1; i++) {
-				const line = lines[i];
-				if (line.trim() === "") continue;
-				writeToSegment(currentNodeIndex, line);
+			// 除最后一个段外，都是完整段（一个译文 = 一个锚点）。
+			// 空段对应模型留下的残缺占位（见 prompt：无法翻译的段输出空段），
+			// 必须消耗一个锚点 index 以保持段序对齐，但内容为空不需要写回，
+			// 该锚点保持原文（wrap 后未被触碰，finish 时用其原文 unwrap 恢复）。
+			// 注意：不能 continue 跳过，否则空段会破坏后续段的 index 对应关系。
+			for (let i = 0; i < segmentsArr.length - 1; i++) {
+				const seg = segmentsArr[i];
+				if (seg.trim() !== "") {
+					writeToSegment(currentNodeIndex, seg);
+				}
 				currentNodeIndex++;
 			}
 
-			// 最后一行是未完成行，写入当前锚点作流式预览；
-			// 为空（如模型输出以换行结尾）时不写，避免把锚点原文清空
-			buffer = lines[lines.length - 1] ?? "";
+			// 最后一段是未完成段，写入当前锚点作流式预览；
+			// 为空（如模型输出以分隔符结尾）时不写，避免把锚点原文清空
+			buffer = segmentsArr[segmentsArr.length - 1] ?? "";
 			if (buffer.trim() !== "") {
 				writeToSegment(currentNodeIndex, buffer);
 			}
 		},
 
 		finish(): void {
-			// flush 缓冲区：剩余内容写入当前锚点（buffer 为空说明模型输出以换行结尾，忽略）
+			// flush 缓冲区：剩余内容写入当前锚点（buffer 为空说明模型输出以分隔符结尾，忽略）
 			if (buffer.trim() !== "") {
 				writeToSegment(currentNodeIndex, buffer);
 			}
 
-			// 行数校验：LLM 实际输出的有效行数（空行不计）必须与锚点数一致：
-			// - buffer 非空 → 已写 currentNodeIndex 个完整行 + 未完成 1 行 = currentNodeIndex + 1
-			// - buffer 为空 → 只有 currentNodeIndex 个完整行（尾随换行不产生新行）
-			// 否则视为协议错位——恢复原文，避免错位写回破坏页面内容
-			const writtenLines =
-				buffer.trim() === "" ? currentNodeIndex : currentNodeIndex + 1;
-			if (writtenLines !== segments.length) {
-				restoreOriginals();
-				for (const info of segments) {
-					info.parent.classList.remove("llm-translating");
-				}
-				buffer = "";
-				return;
-			}
-
-			// 成功：unwrap 翻译段的 span，恢复原始 DOM 结构
+			// 尽力对齐：不再做严格段数校验/整段回滚，而是尽量保留已译部分。
+			// 原因是本地小模型经常吞/并段（如把 "The " + "Oniguruma Engine" 合并成一段），
+			// 严格回滚会让整段译文全部丢失，体验很差。
+			// - 模型输出段数 > 锚点数：多余段已在流式阶段由 writeToSegment 的
+			//   index 越界检查丢弃，这里无需处理。
+			// - 模型输出段数 < 锚点数：未写到的锚点保持原文（wrap 后未被触碰），
+			//   unwrapToText 用其现有 textContent（即原文）恢复，缺失段自动补回原文。
+			// 代价：若模型在中间错位合并，后续段译文会整体前移，这是"尽力"方案的固有妥协。
 			for (const info of segments) {
 				if (info.target.isConnected) {
 					unwrapToText(info.target, info.target.textContent);

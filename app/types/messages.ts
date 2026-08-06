@@ -1,6 +1,8 @@
 export interface StreamTranslateStart {
 	type: "START";
 	text: string;
+	/** 网页元数据（标题 + description），由 content 端读取，background 注入 system prompt 帮助理解语境 */
+	pageMeta?: { title: string; description: string };
 }
 
 export interface StreamTranslateChunk {

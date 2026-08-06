@@ -25,6 +25,20 @@ let isTranslating = false;
 let currentTranslator: InlineTranslatorController | null = null;
 let currentPort: browser.Runtime.Port | null = null;
 
+/**
+ * 读取当前网页的元数据（title + meta description），供 background 注入 system prompt
+ * 帮助模型理解页面主题与语境。description 为空时省略该字段。
+ * 截断保护：避免超长 title/description 塞爆 prompt。
+ */
+function getPageMeta(): { title: string; description: string } {
+	const title = document.title.trim().slice(0, 200);
+	const descEl = document.querySelector<HTMLMetaElement>(
+		'meta[name="description"], meta[property="og:description"]',
+	);
+	const description = (descEl?.content ?? "").trim().slice(0, 300);
+	return { title, description };
+}
+
 function getSelectedText(): string {
 	const selection = window.getSelection();
 	return selection ? selection.toString().trim() : "";
@@ -96,7 +110,7 @@ function startTranslate(_text: string): void {
 		if (msg.type === "CHUNK" && msg.chunk) {
 			currentTranslator?.appendChunk(msg.chunk);
 		} else if (msg.type === "DONE") {
-			// finish() 内部做段数校验：对齐则标记完成，错位则恢复原文
+			// finish() 内部做尽力对齐：尽量保留已译部分，缺失段补原文
 			currentTranslator?.finish();
 			finish();
 		} else if (msg.type === "ERROR") {
@@ -118,7 +132,11 @@ function startTranslate(_text: string): void {
 	port.onMessage.addListener(messageHandler);
 	port.onDisconnect.addListener(disconnectHandler);
 
-	port.postMessage({ type: "START", text: segmentedText });
+	port.postMessage({
+		type: "START",
+		text: segmentedText,
+		pageMeta: getPageMeta(),
+	});
 
 	function finish(): void {
 		if (isFinished) return;

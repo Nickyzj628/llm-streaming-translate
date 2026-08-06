@@ -23,12 +23,12 @@
 
 ### 翻译流程（选词 → 流式原地替换）
 1. `app/content/index.ts`：监听选区，弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。
-2. 点击后 `createInlineTranslator(range, shadowRoot)`（`app/content/InlineTranslator.ts`）提取选区内的文本节点，**每行一个文本节点**构造协议文本（未翻译部分用 `<NO_TRANSLATE>` 标出，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。
+2. 点击后 `createInlineTranslator(range, shadowRoot)`（`app/content/InlineTranslator.ts`）提取选区内的文本节点，**每个文本节点一段，段间用 `¶` 分隔**构造协议文本（不译内容用 `[[n]]` 占位符，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。
 3. `app/background/StreamTranslator.ts` 用 `@nickyzj2023/utils` 的 `chatCompletions`（**不是** OpenAI 官方 SDK）流式请求，把 `CHUNK` / `DONE` / `ERROR` 经端口回传。
-4. 内容脚本按 `\n` 行分隔拆分流式 chunk，逐行写回对应锚点（**只取标签外译文**，preserve 段保持原文），并切换 `llm-translating` / `llm-translated` CSS class。
+4. 内容脚本按 `¶` 分隔拆分流式 chunk，逐段写回对应锚点（**删除占位符后写译文**，preserve 段保持原文），并切换 `llm-translating` / `llm-translated` CSS class。
 
 ### 最容易踩的坑
-- **`<NO_TRANSLATE>` 行对齐协议**：`InlineTranslator.ts` 每行 = 一个文本节点（行数 = 节点数），未选中部分与 `pre/code` 等 preserve 节点用 `<NO_TRANSLATE>` 标出；`StreamTranslator.ts` 的 system prompt 要求模型输出**行数与输入完全相同**、**保留标签结构**（标签内逐字照抄、标签外翻译）。写回时**只取标签外译文**写入选中锚点，标签内容即使被模型翻译也会被丢弃（上下文由 DOM 原文兜底）；preserve 段写回原文、不依赖模型。改 prompt 或 `InlineTranslator.ts` 的分段/行构造逻辑必须两端同步，否则译文错位。行解析逻辑（`extractTranslatedContent`）在 `app/utils/protocol.ts` 共享，content 写回与 options 测试显示两端共用，改动需同步。
+- **`[[n]]` 占位符 + `¶` 段对齐协议**：`InlineTranslator.ts` 每个文本节点 = 一段（段数 = 节点数），段间用 `¶` 分隔（**不用换行**——段内允许模型自由换行而不破坏段数对齐），未选中部分与 `pre/code` 等 preserve 节点统一替换为 `[[n]]` 占位符，模型只需**原样照抄占位符**、翻译其余部分，无需理解任何标签结构（降低本地小模型负担）。`StreamTranslator.ts` 的 system prompt 要求模型输出**段数与输入完全相同**、段间用 `¶` 分隔。写回时**删除占位符**得到纯译文写入选中锚点，未选中部分由 DOM 原文兜底；preserve 段写回原文、不依赖模型。语境信息来自网页元数据：content 端读取 `document.title` + meta description 随 START 消息的 `pageMeta` 字段发送，background 注入 system prompt 帮助模型理解页面主题（元数据为空则不注入）。改 prompt 或 `InlineTranslator.ts` 的分段/行构造逻辑必须两端同步（`¶` 与 `[[n]]` 在 content / background / options 三端一致），否则译文错位。段解析逻辑（`extractTranslatedContent`）在 `app/utils/protocol.ts` 共享，content 写回与 options 测试显示两端共用，改动需同步。
 - **消息协议**：端口消息类型定义在 `app/types/messages.ts`（START/CHUNK/DONE/ERROR），改动需同步 background 与 content 两侧。
 - **设置存储**：`browser.storage.local`，schema 在 `app/types/storage.ts`（baseUrl/model/apiKey/body/targetLang）。`body` 是任意 JSON，会被合并进 `/chat/completions` 请求体，修改时需保证 JSON 合法。
 - **模型列表**：选项页从 `{baseUrl}/models` 拉取，请求头 `Authorization: Bearer <apiKey>`。

@@ -62,7 +62,7 @@ sequenceDiagram
     C->>C: 弹出浮动翻译按钮<br/>show(x, y)<br/>content/FloatingButton.ts
     U->>C: 点击翻译按钮<br/>onClick → startTranslate<br/>content/FloatingButton.ts / index.ts
     C->>C: 提取选区文本节点并包锚点<br/>createInlineTranslator(range, shadowRoot)<br/>content/InlineTranslator.ts
-    C->>C: 生成待翻译文本（每行一个节点）<br/>getText()<br/>content/InlineTranslator.ts
+    C->>C: 生成待翻译文本（每段一个节点，¶ 分隔）<br/>getText()<br/>content/InlineTranslator.ts
     C->>B: 建立连接并发送文本<br/>runtime.connect("stream-translate") + START<br/>content/index.ts
 
     Note over B: 后台侧（background）
@@ -74,12 +74,12 @@ sequenceDiagram
     loop 流式返回
         LLM-->>B: 返回译文片段
         B-->>C: 转发译文片段 CHUNK<br/>port.postMessage<br/>StreamTranslator.ts
-        C->>C: 按行切分，逐行写回锚点<br/>appendChunk()<br/>content/InlineTranslator.ts
+        C->>C: 按段切分，逐段写回锚点<br/>appendChunk()<br/>content/InlineTranslator.ts
     end
 
     LLM-->>B: 流结束
     B-->>C: 发送完成通知 DONE<br/>StreamTranslator.ts
-    C->>C: 行数校验 + 恢复原文结构 + 切样式<br/>finish()<br/>content/InlineTranslator.ts
+    C->>C: 尽力对齐 + 恢复原文结构 + 切样式<br/>finish()<br/>content/InlineTranslator.ts
 ```
 
 ---

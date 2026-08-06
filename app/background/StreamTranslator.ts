@@ -2,9 +2,46 @@ import { chatCompletions, defineModel } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import { getStorage } from "@/utils/storage";
 
+/**
+ * 构造系统提示词。
+ * 网页元数据（title/description）作为"网页背景"注入，帮助模型理解页面主题与语境，
+ * 再明确翻译任务与段对齐协议。元数据为空时（如 options 测试板块）不注入该段，
+ * 保持 prompt 简洁、后向兼容。
+ */
+function buildSystemPrompt(
+	pageMeta: { title: string; description: string } | undefined,
+	targetLang: string,
+): string {
+	// 网页背景段：仅当有元数据时注入，作为纯主题信号，不参与写回
+	const background =
+		pageMeta && (pageMeta.title || pageMeta.description)
+			? `这是一份网页内容，网页信息如下（仅用于帮助理解语境，不要翻译这些信息）：
+- 网页标题：${pageMeta.title || "（无）"}
+- 网页描述：${pageMeta.description || "（无）"}
+
+`
+			: "";
+
+	return `${background}你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。
+
+规则：
+- 输入用 ¶ 分成若干段，输出也必须是同样数量的段，每段用 ¶ 分隔，段间顺序一一对应，一段都不能少。段数必须与输入完全一致。
+- 残缺的片段（如单独一个 "The "、孤立的单词）如果无法翻译，就在该位置输出一个空段（两个 ¶ 之间什么都不写），【绝不能】丢弃该段或把它合并到相邻段。
+- ¶ 和形如 [[数字]] 的标记都是"不要翻译、原样照抄"的内容，其余文字翻译成${targetLang}。
+- 只输出译文，不要输出任何解释、提示或原文。
+
+示例：
+输入：
+The ¶[[0]] Oniguruma Engine¶ can only be created asynchronously.
+
+输出：
+ ¶[[0]] 正则引擎¶ 只能异步创建。`;
+}
+
 export async function streamTranslateOverPort(
 	text: string,
 	port: browser.Runtime.Port,
+	pageMeta?: { title: string; description: string },
 ): Promise<void> {
 	const {
 		baseUrl,
@@ -47,28 +84,7 @@ export async function streamTranslateOverPort(
 		}> = [
 			{
 				role: "system",
-				content: `你是一个翻译模型。把用户输入的文字翻译成 ${targetLang}。
-
-用户输入是多行文本，每行对应网页中被选中的一段文字。必须严格遵守以下规则：
-
-【最重要】输出行数必须和输入行数完全一致，一行对应一行，按顺序一一对应。禁止把多行合并成一行，禁止漏行，禁止额外加行。即使某一行只有半个单词、翻译出来不自然，也要单独输出一行。
-
-每行输出以 "- " 开头，并且【必须保留】输入中的 <NO_TRANSLATE>...</NO_TRANSLATE> 标签结构：标签内的内容逐字照抄、不要翻译，标签外的内容才是需要翻译的部分。标签结构要与输入一一对应。
-
-如果某一行是不完整的片段，按字面意思翻译即可，不要补全内容、不要合并前后行。
-
-只输出译文，不要输出任何解释、提示或原文。
-
-示例：
-输入：
-- Build new UI.
-- <NO_TRANSLATE>Press </NO_TRANSLATE>Enter<NO_TRANSLATE> to start</NO_TRANSLATE>
-- <NO_TRANSLATE>design.md</NO_TRANSLATE>
-
-输出：
-- 构建新的UI。
-- <NO_TRANSLATE>Press </NO_TRANSLATE>按下<NO_TRANSLATE> to start</NO_TRANSLATE>
-- <NO_TRANSLATE>design.md</NO_TRANSLATE>`,
+				content: buildSystemPrompt(pageMeta, targetLang),
 			},
 			{
 				role: "user",
