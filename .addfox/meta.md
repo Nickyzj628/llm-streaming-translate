@@ -42,19 +42,19 @@ related_files:
 
 ```text
 background/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/background/index.ts
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/background/index.ts
 └── 📁 JS/
     └── background/index.js
     ⚙️  html: false
 
 content/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/content/index.ts
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/content/index.ts
 └── 📁 JS/
     └── content/index.js
     ⚙️  html: false
 
 options/
-├── 📄 Source: E:/Projects/llm-streaming-translate/app/options/index.tsx
+├── 📄 Source: /data/usershare/llm-streaming-translate/app/options/index.tsx
 ├── 📁 JS/
 │   ├── options/index.js
 │   └── static/js/shared-vendor.js

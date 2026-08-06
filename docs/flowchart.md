@@ -1,11 +1,12 @@
 # LLM Streaming Translator 业务流程图（Mermaid）
 
-> 使用 Mermaid 语法描述 options / content / background 三端如何协作完成「划词 → 翻译 → 原地替换」。
+> 使用 Mermaid 语法描述核心业务「划词 → 翻译 → 原地替换」的协作流程。
 > 在支持 Mermaid 的编辑器或 GitHub/GitLab 中可直接渲染。
+> 技术与协议细节（行对齐协议、端口消息、存储 schema、权限、入口文件）见 AGENTS.md「架构要点 / 最容易踩的坑」。
 
 ---
 
-## 1. 整体业务流程图
+## 1. 整体业务流程图（面向项目干系人）
 
 ```mermaid
 flowchart TB
@@ -14,29 +15,21 @@ flowchart TB
         U2[点击翻译按钮]
     end
 
-    subgraph Content["content 脚本"]
-        C1[监听选区]
-        C2[显示浮动按钮]
-        C3[提取文本并拼接]
-        C4[发送 START]
-        C5[接收 CHUNK/DONE]
-        C6[按 U+2016 切分]
-        C7[原地写入 DOM]
+    subgraph Content["页面内脚本"]
+        C1[监听划词]
+        C2[弹出翻译按钮]
+        C3[整理待翻译文本<br/>并保留页面原文]
+        C4[上报翻译请求]
+        C5[边接收译文<br/>边逐段实时显示]
+        C6[完成原地替换<br/>页面不留痕迹]
     end
 
-    subgraph Background["background"]
-        B1[建立端口连接]
-        B2[读取存储配置]
-        B3[校验配置]
-        B4[请求 LLM 流]
-        B5[转发 CHUNK/DONE]
-    end
-
-    subgraph Options["options 页面"]
-        O1[填写配置]
-        O2[保存配置]
-        O3[拉取模型列表]
-        O4[测试翻译]
+    subgraph Background["后台脚本"]
+        B1[接收翻译请求]
+        B2[读取已保存的设置]
+        B3[检查设置是否齐全]
+        B4[调用 AI 接口翻译]
+        B5[转发译文结果]
     end
 
     U1 --> C1
@@ -50,180 +43,71 @@ flowchart TB
     B4 --> B5
     B5 --> C5
     C5 --> C6
-    C6 --> C7
-    O1 --> O4
-    O2 -.->|background 读取| B2
-    O4 -.->|走 stream-translate| B1
 ```
 
 ---
 
-## 2. 划词翻译时序图
+## 2. 划词翻译时序图（content / background 分工）
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as 用户
-    participant C as content
-    participant FB as FloatingButton
-    participant IT as InlineTranslator
-    participant B as background
-    participant S as storage.local
-    participant LLM as LLM API
+    participant C as content（页面脚本）
+    participant B as background（后台脚本）
+    participant LLM as AI 翻译接口
 
-    U->>C: 划选文本
-    C->>FB: show(x, y)
-    FB-->>U: 显示翻译按钮
+    Note over C: 页面侧（content）
+    U->>C: 划选文本<br/>监听 mouseup / selectionchange<br/>content/index.ts
+    C->>C: 弹出浮动翻译按钮<br/>show(x, y)<br/>content/FloatingButton.ts
+    U->>C: 点击翻译按钮<br/>onClick → startTranslate<br/>content/FloatingButton.ts / index.ts
+    C->>C: 提取选区文本节点并包锚点<br/>createInlineTranslator(range, shadowRoot)<br/>content/InlineTranslator.ts
+    C->>C: 生成待翻译文本（每行一个节点）<br/>getText()<br/>content/InlineTranslator.ts
+    C->>B: 建立连接并发送文本<br/>runtime.connect("stream-translate") + START<br/>content/index.ts
 
-    U->>FB: 点击按钮
-    FB->>C: onClick
-    C->>IT: createInlineTranslator<br/>(提取+包 span 锚点)
-    IT-->>C: getText()<br/>每行一个 <TARGET><br/>行1\n行2\n...
-    C->>B: connect stream-translate
-    C->>B: START
-
-    B->>S: getStorage
-    S-->>B: config
-    B->>B: 校验配置
-    B->>LLM: chatCompletions<br/>stream=true
+    Note over B: 后台侧（background）
+    B->>B: 接收 START，分派翻译<br/>onConnect → streamTranslateOverPort<br/>background/index.ts / StreamTranslator.ts
+    B->>B: 读取已保存的设置<br/>getStorage()<br/>utils/storage.ts
+    B->>B: 校验 baseUrl / model / body<br/>StreamTranslator.ts
+    B->>LLM: 流式请求翻译<br/>chatCompletions(stream: true)<br/>StreamTranslator.ts
 
     loop 流式返回
-        LLM-->>B: content
-        B->>C: CHUNK
-        C->>IT: appendChunk
-        IT->>IT: 按换行切分写入 span 锚点
+        LLM-->>B: 返回译文片段
+        B-->>C: 转发译文片段 CHUNK<br/>port.postMessage<br/>StreamTranslator.ts
+        C->>C: 按行切分，逐行写回锚点<br/>appendChunk()<br/>content/InlineTranslator.ts
     end
 
     LLM-->>B: 流结束
-    B->>C: DONE
-    C->>IT: finish
-    IT->>IT: flush + unwrap span + 切样式
+    B-->>C: 发送完成通知 DONE<br/>StreamTranslator.ts
+    C->>C: 行数校验 + 恢复原文结构 + 切样式<br/>finish()<br/>content/InlineTranslator.ts
 ```
 
 ---
 
-## 3. options 页面配置与测试流程
+## 3. 组件依赖关系图
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor U as 用户
-    participant O as options
-    participant S as storage.local
-    participant API as /models
-    participant B as background
-
-    U->>O: 打开选项页
-    O->>S: getAllStorage
-    S-->>O: 回填配置
-
-    alt 选择预设
-        U->>O: 选择预设
-        O->>O: 填充 baseUrl/model/body
-    end
-
-    alt 刷新模型
-        U->>O: 点击刷新
-        O->>API: GET /models
-        API-->>O: ids
-        O->>O: setModels
-    end
-
-    alt 测试翻译
-        U->>O: 点击测试
-        O->>B: connect stream-translate
-        O->>B: START
-        B->>S: getStorage
-        B->>API: chatCompletions
-        API-->>B: 流式响应
-        B->>O: CHUNK/DONE/ERROR
-        O->>O: showToast
-    end
-
-    U->>O: 点击保存
-    O->>S: setStorage
-    S-->>O: 完成
-    O->>O: showToast 已保存
-```
-
----
-
-## 4. 关键协作说明
-
-### 4.1 分段对齐协议
-
-- **content**：`InlineTranslator.ts` 两阶段提取——先收集选区内每个 `Text` 节点的选中范围（不碰 DOM，避免 live `TreeWalker` 漂移），再统一用 `splitText()` 拆出选中部分并包 `<span class="llm-selected" style="display: contents">` 锚点（纯定位用、无视觉、不影响布局）。
-- **发送文本**：**每行一个 `<TARGET>`**，行 = 节点完整文本（上下文补全），选中部分用 `<TARGET>...</TARGET>` 包裹；无需翻译的节点（`pre/code/kbd/samp/var` 内）**不占行**，内容紧跟上一个 `<TARGET>` 行尾作上下文。
-- **background**：系统提示要求 LLM 输出**与输入相同行数**（每行一个译文、按行对齐），每行只输出对应 `<TARGET>` 的译文（不带标签、不带上下文）。
-- **content 写回**：收到 `CHUNK` 按换行切分，译文写入对应锚点（`span.textContent`）；**非选中部分 DOM 全程不动**。
-- **unwrap 恢复**：翻译成功时 `span.replaceWith(译文文本)` 恢复原始 DOM 结构，`llm-translated` class 加在父元素；页面结构不留残渣。
-- **行数校验（容错）**：`finish()` 时若已写入行数 ≠ 锚点数（LLM 未遵守行数协议），**恢复原文**（unwrap 回选中部分原文）并仅移除 `llm-translating` class——防止错位写回破坏页面。
-
-> ⚠️ 修改 prompt 或 `InlineTranslator.ts` 的分段/标记逻辑必须两端同步，否则译文错位。
-
-### 4.2 端口消息协议
-
-定义见 `app/types/messages.ts`。当前 content 端实际只关心四条：
-
-| 方向 | 类型 | 说明 |
-|---|---|---|
-| content → background | `START` | 发起翻译 |
-| background → content | `CHUNK` | 译文片段 |
-| background → content | `DONE` | 流结束 |
-| background → content | `ERROR` | 翻译失败 |
-
-> `REASONING` 和 `USAGE` 在原地替换模式下无消费，可考虑从协议中移除或仅保留扩展点。
-
-### 4.3 存储与权限
-
-- **存储**：`browser.storage.local` 只被 **background** 读取；content 只发文本。
-- **Schema**：`{ baseUrl, model, apiKey, body, targetLang }`（见 `app/types/storage.ts`）。
-- **权限**：manifest 仅声明 `activeTab + storage`；LLM 端点通过 `optional_host_permissions`（http/https）授权访问。
-
-### 4.4 入口文件
-
-| 入口 | 文件 | 职责 |
-|---|---|---|
-| content | `app/content/index.ts` | 监听划词、显示按钮、发起翻译、原地替换 |
-| background | `app/background/index.ts` | 维护端口连接、调度翻译器 |
-| options | `app/options/index.tsx` | 配置界面、测试、导入导出 |
-
----
-
-## 5. 组件依赖关系图
-
-```mermaid
-flowchart LR
-    subgraph Content
-        CI[content/index.ts]
-        FB[FloatingButton.ts]
-        IT[InlineTranslator.ts]
-    end
-
-    subgraph Background
-        BI[background/index.ts]
-        ST[StreamTranslator.ts]
-    end
-
-    subgraph Options
-        OI[options/index.tsx]
-        OA[options/App.tsx]
-    end
-
+flowchart TB
     subgraph Shared["共享模块"]
         TM[messages.ts]
-        TS[storage.ts]
-        US[storage.ts]
+        TS[types/storage.ts]
+        PR[utils/protocol.ts]
     end
 
-    CI --> FB
-    CI --> IT
-    CI --> TM
-    BI --> ST
-    BI --> TM
-    ST --> TS
-    ST --> US
-    OA --> US
-    OA --> TM
-    OI --> OA
+    subgraph Background["background"]
+        BI[background/index.ts] --> ST[StreamTranslator.ts]
+    end
+
+    subgraph Content["content"]
+        CI[content/index.ts] --> FB[FloatingButton.ts]
+        CI --> IT[InlineTranslator.ts]
+    end
+
+    subgraph Options["options"]
+        OI[options/index.tsx] --> OA[App.tsx]
+    end
+
+    Background --> Shared
+    Content --> Shared
+    Options --> Shared
 ```
