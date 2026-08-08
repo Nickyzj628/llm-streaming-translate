@@ -70,8 +70,4 @@ export default defineConfig({
 			},
 		},
 	},
-	browserPath: {
-		chrome: `${process.env.LOCALAPPDATA}\\Chromium\\Application\\chrome.exe`,
-		firefox: "C:\\Program Files\\LibreWolf\\librewolf.exe",
-	},
 });

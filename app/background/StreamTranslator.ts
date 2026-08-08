@@ -12,30 +12,31 @@ function buildSystemPrompt(
 	pageMeta: { title: string; description: string } | undefined,
 	targetLang: string,
 ): string {
-	// 网页背景段：仅当有元数据时注入，作为纯主题信号，不参与写回
-	const background =
-		pageMeta && (pageMeta.title || pageMeta.description)
-			? `这是一份网页内容，网页信息如下（仅用于帮助理解语境，不要翻译这些信息）：
-- 网页标题：${pageMeta.title || "（无）"}
-- 网页描述：${pageMeta.description || "（无）"}
+	return `你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。
 
+${
+	pageMeta
+		? `
+上下文语境：
+- 页面标题：${pageMeta.title || "（无）"}
+- 页面描述：${pageMeta.description || "（无）"}
 `
-			: "";
+		: ""
+}
 
-	return `${background}你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。
 
 规则：
-- 输入用 ¶ 分成若干段，输出也必须是同样数量的段，每段用 ¶ 分隔，段间顺序一一对应，一段都不能少。段数必须与输入完全一致。
-- 残缺的片段（如单独一个 "The "、孤立的单词）如果无法翻译，就在该位置输出一个空段（两个 ¶ 之间什么都不写），【绝不能】丢弃该段或把它合并到相邻段。
-- ¶ 和形如 [[数字]] 的标记都是"不要翻译、原样照抄"的内容，其余文字翻译成${targetLang}。
+- 输入内容被{{br}}分成若干段，输出也必须是同样数量的段，每段用{{br}}分隔，段间顺序一一对应，绝对不可遗漏、转义或翻译该标记，并注意它的位置，一段都不能少。
+- {{br}}和形如{{varN}}的标记都是"不要翻译、原样照抄"的占位符，严禁翻译、改动或移动它们，其余文字翻译成${targetLang}。
+- 残缺的片段（如单独一个"the"、孤立的单词）如果无法翻译，也要在该段输出一个空格，**绝不能**丢弃该段或把它合并到相邻段。
 - 只输出译文，不要输出任何解释、提示或原文。
 
 示例：
 输入：
-The ¶[[0]] Oniguruma Engine¶ can only be created asynchronously.
+With the new {{br}}JavaScript RegExp engine{{br}}, you are able to create an {{var1}} synchronously as well.
 
 输出：
- ¶[[0]] 正则引擎¶ 只能异步创建。`;
+使用新的{{br}}JavaScript RegExp引擎{{br}}，您也可以同步创建{{var1}}。`;
 }
 
 export async function streamTranslateOverPort(
