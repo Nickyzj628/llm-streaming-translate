@@ -1,4 +1,8 @@
-import { extractTranslatedContent, SEGMENT_SEPARATOR } from "@/utils/protocol";
+import {
+	extractTranslatedContent,
+	SEGMENT_SEPARATOR,
+	stripIncompleteSegmentPrefix,
+} from "@/utils/protocol";
 
 export interface InlineTranslatorController {
 	/** 追加译文 chunk，流式解析段分隔并写入对应锚点 */
@@ -29,6 +33,13 @@ interface SegmentTarget {
 	originalText: string;
 	/** 是否为 preserve 节点（pre/code 等）：写回时忽略模型输出、保持原文 */
 	preserve: boolean;
+	/**
+	 * 是否已被模型译文覆盖（writeToSegment 成功写回后置 true）。
+	 * 用于 finish 时区分"模型已覆盖的锚点"与"未写回的空段"：
+	 * 模型输出空段/未写回时，该锚点保持 false，finish 阶段被清空丢弃
+	 * （用户明确要求丢弃空段，见 AGENTS.md 空段处理约定）。
+	 */
+	written: boolean;
 }
 
 /** 检查节点是否位于需要原样保留的元素（pre/code 等）内部 */
@@ -134,6 +145,7 @@ function extractTextNodes(range: Range): {
 				parent: span.parentElement!,
 				originalText: text,
 				preserve: true,
+				written: false,
 			});
 			rows.push(placeholder());
 			continue;
@@ -156,6 +168,7 @@ function extractTextNodes(range: Range): {
 			parent: span.parentElement!,
 			originalText: selected,
 			preserve: false,
+			written: false,
 		});
 
 		// 占位符代表未选中部分（before/after），为空时省略，避免噪音。
@@ -238,10 +251,17 @@ export function createInlineTranslator(
 
 		// 非 preserve 节点：删除占位符 {{varN}} 得到纯译文写回选中锚点；
 		// 未选中部分由 DOM 原文保留，上下文保真不依赖模型。
-		const content = extractTranslatedContent(text);
-		// 内容为空（如模型只输出了 "-" 前缀或空行）时不写，避免清空锚点原文
+		// 先剥离段尾"未完成的分隔符前缀"（{{seg / {{se / {{s / {{），
+		// 防止流式过程中分隔符被拆 chunk 到达时把前缀当译文写进锚点（见协议注释）。
+		const content = extractTranslatedContent(stripIncompleteSegmentPrefix(text));
+		// 内容为空（流式未完成段，如分隔符刚拆到一半）时不写，避免清空锚点原文。
+		// 注意：这里不能把"完整空段"也当成空——完整空段应被丢弃（finish 时清空锚点），
+		// 而非保留原文。区分交给 finish：完整空段未写回、written 保持 false，finish 清空；
+		// 流式未完成段同样不写回，但不受影响（其真实内容随后续 chunk 写回）。
 		if (content.trim() === "") return;
 		info.target.textContent = content;
+		// 标记已写回：finish 时据此区分"模型已覆盖"与"未写回空段"（丢弃后者）
+		info.written = true;
 	}
 
 	function restoreOriginals(): void {
@@ -298,11 +318,17 @@ export function createInlineTranslator(
 			// 严格回滚会让整段译文全部丢失，体验很差。
 			// - 模型输出段数 > 锚点数：多余段已在流式阶段由 writeToSegment 的
 			//   index 越界检查丢弃，这里无需处理。
-			// - 模型输出段数 < 锚点数：未写到的锚点保持原文（wrap 后未被触碰），
-			//   unwrapToText 用其现有 textContent（即原文）恢复，缺失段自动补回原文。
+			// - 模型输出段数 < 锚点数（含完整空段）：未写回的锚点 written=false。
+			//   preserve 段保留原文；非 preserve 段按用户要求"丢弃空段"——清空锚点，
+			//   而不是保留原文（否则会残留孤立原文碎片，如本例的 "The "）。
 			// 代价：若模型在中间错位合并，后续段译文会整体前移，这是"尽力"方案的固有妥协。
 			for (const info of segments) {
-				if (info.target.isConnected) {
+				if (!info.target.isConnected) continue;
+				// 非 preserve 且模型未写回（空段）：丢弃原文，清空锚点
+				if (!info.preserve && !info.written) {
+					unwrapToText(info.target, "");
+				} else {
+					// 已写回：保留译文；preserve：保留原文
 					unwrapToText(info.target, info.target.textContent);
 				}
 				info.parent.classList.remove("llm-translating");

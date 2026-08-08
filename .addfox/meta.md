@@ -22,7 +22,7 @@ related_files:
 - Framework: addfox
 - Name: LLM Streaming Translator
 - Description: 基于大模型的流式划词翻译插件
-- Version: 1.3.0
+- Version: 1.2.3
 - Framework version: 0.2.5
 - Manifest version: 3
 

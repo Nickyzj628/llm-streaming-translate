@@ -14,6 +14,7 @@ import { useToast } from "../../hooks/useToast";
 import {
 	extractTranslatedContent,
 	SEGMENT_SEPARATOR,
+	stripIncompleteSegmentPrefix,
 } from "../../utils/protocol";
 import { streamTranslate } from "../../utils/streamTranslate";
 import { TEST_SAMPLE } from "../utils/constants";
@@ -99,9 +100,13 @@ export function useTestTranslation(options: UseTestTranslationOptions): {
 				// 模拟真实划词页面中"选中部分被译文替换"的整体效果。
 				// 占位符对应未选中/preserve 内容，测试板块没有 DOM 兜底，
 				// 这里直接删掉占位符即可（与 content 端写回逻辑一致）。
+				// 先剥离段尾"未完成的分隔符前缀"（{{seg / {{se / {{s / {{），
+				// 防止流式过程中分隔符被拆 chunk 到达时把前缀当译文写进输入框（见协议注释）。
 				const translatedLines = result
 					.split(SEGMENT_SEPARATOR)
-					.map((line) => extractTranslatedContent(line));
+					.map((line) =>
+						extractTranslatedContent(stripIncompleteSegmentPrefix(line)),
+					);
 				setTestSource((prev) =>
 					prev.map((original, i) => {
 						const translated = translatedLines[i];
