@@ -1,0 +1,21 @@
+/* ImportExportPanel（备份与恢复板块）样式 —— 遵循 DESIGN.md 极简风格 */
+.importExport {
+	margin-top: var(--space8);
+}
+
+.importExport h3 {
+	font-size: 1rem;
+	font-weight: var(--semibold);
+	margin: 0 0 var(--space3);
+	color: var(--black);
+	letter-spacing: -0.02em;
+}
+
+.importExportActions {
+	display: flex;
+	gap: var(--space3);
+}
+
+.hiddenInput {
+	display: none;
+}

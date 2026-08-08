@@ -1,5 +1,4 @@
 import { defineShadowContentUI } from "@addfox/utils";
-import browser from "webextension-polyfill";
 import {
 	hide as hideButton,
 	isButtonElement,
@@ -11,7 +10,7 @@ import {
 	createInlineTranslator,
 	type InlineTranslatorController,
 } from "@/content/InlineTranslator";
-import type { StreamTranslatePortMessage } from "@/types/messages";
+import { streamTranslate } from "@/utils/streamTranslate";
 
 const mountUI = defineShadowContentUI({
 	name: "llm-translate-ui",
@@ -23,7 +22,8 @@ setParent(shadowRoot);
 
 let isTranslating = false;
 let currentTranslator: InlineTranslatorController | null = null;
-let currentPort: browser.Runtime.Port | null = null;
+/** 当前进行中的翻译句柄（streamTranslate 返回值），用于主动取消 */
+let currentStream: { abort: () => void } | null = null;
 
 /**
  * 读取当前网页的元数据（title + meta description），供 background 注入 system prompt
@@ -77,11 +77,11 @@ function handleSelectionChange(): void {
 }
 
 function startTranslate(_text: string): void {
-	// 若已有翻译进行中，先取消前一个
+	// 取消前一个进行中的翻译：先销毁翻译器，再 abort 端口
 	if (isTranslating) {
 		currentTranslator?.destroy();
-		currentPort?.disconnect();
-		currentPort = null;
+		currentStream?.abort();
+		currentStream = null;
 		currentTranslator = null;
 		isTranslating = false;
 	}
@@ -101,52 +101,41 @@ function startTranslate(_text: string): void {
 	isTranslating = true;
 	hideButton();
 
-	let isFinished = false;
-	const port = browser.runtime.connect({ name: "stream-translate" });
-	currentPort = port;
+	/**
+	 * 复位翻译状态：isTranslating 归 false、清掉 currentTranslator/currentStream。
+	 * 端口自身的监听器清理/断连由 streamTranslate 内部完成，这里只管业务状态。
+	 */
+	function finish(): void {
+		if (!isTranslating) return;
+		isTranslating = false;
+		currentTranslator = null;
+		currentStream = null;
+	}
 
-	const messageHandler = (message: unknown): void => {
-		const msg = message as StreamTranslatePortMessage;
-		if (msg.type === "CHUNK" && msg.chunk) {
-			currentTranslator?.appendChunk(msg.chunk);
-		} else if (msg.type === "DONE") {
+	currentStream = streamTranslate({
+		text: segmentedText,
+		pageMeta: getPageMeta(),
+		onChunk: (chunk) => {
+			// 流式写回：translator 内部按段分隔拆解并写入对应锚点
+			currentTranslator?.appendChunk(chunk);
+		},
+		onDone: () => {
 			// finish() 内部做尽力对齐：尽量保留已译部分，缺失段补原文
 			currentTranslator?.finish();
 			finish();
-		} else if (msg.type === "ERROR") {
-			console.error("[LLM Translate] Translation failed:", msg.error);
+		},
+		onError: (error) => {
+			console.error("[LLM Translate] Translation failed:", error);
+			// 失败回滚：销毁翻译器，恢复原文 DOM
 			currentTranslator?.destroy();
-			currentTranslator = null;
 			finish();
-		}
-	};
-
-	const disconnectHandler = (): void => {
-		if (!isFinished) {
+		},
+		onDisconnect: () => {
+			// 端口被异常断开（background 崩溃/被关闭）：回滚原文
 			currentTranslator?.destroy();
-			currentTranslator = null;
 			finish();
-		}
-	};
-
-	port.onMessage.addListener(messageHandler);
-	port.onDisconnect.addListener(disconnectHandler);
-
-	port.postMessage({
-		type: "START",
-		text: segmentedText,
-		pageMeta: getPageMeta(),
+		},
 	});
-
-	function finish(): void {
-		if (isFinished) return;
-		isFinished = true;
-		isTranslating = false;
-		port.onMessage.removeListener(messageHandler);
-		port.onDisconnect.removeListener(disconnectHandler);
-		currentPort = null;
-		port.disconnect();
-	}
 }
 
 function cleanup(): void {
@@ -156,8 +145,8 @@ function cleanup(): void {
 	hideButton();
 	currentTranslator?.destroy();
 	currentTranslator = null;
-	currentPort?.disconnect();
-	currentPort = null;
+	currentStream?.abort();
+	currentStream = null;
 }
 
 window.addEventListener("beforeunload", cleanup);

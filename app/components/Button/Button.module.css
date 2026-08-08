@@ -1,3 +1,5 @@
+/* 按钮样式 —— 遵循 DESIGN.md「Minimal & Direct」：
+   无 transform 位移、无阴影层级堆积，只保留必要的 hover/active 明暗反馈。 */
 .button {
 	display: inline-flex;
 	align-items: center;
@@ -10,8 +12,7 @@
 	cursor: pointer;
 	white-space: nowrap;
 	user-select: none;
-	transition: box-shadow var(--transitionBase),
-		transform var(--transitionBase), background-color var(--transitionBase);
+	transition: background-color var(--transitionFast);
 }
 
 .fullWidth {
@@ -21,40 +22,39 @@
 .primary {
 	background: var(--primary);
 	color: var(--white);
-	box-shadow: var(--shadowBorder);
 }
 
+/* hover：仅做 8% 变暗（DESIGN.md），无位移无外发光 */
 .primary:hover {
-	transform: translateY(-1px);
-	box-shadow: var(--shadowBorderHover), var(--shadowAmbient);
+	background: color-mix(in srgb, var(--primary) 92%, black);
 }
 
 .primary:active {
-	transform: translateY(0);
+	background: color-mix(in srgb, var(--primary) 88%, black);
 }
 
 .primary:focus-visible {
-	box-shadow: var(--shadowFocus);
+	outline: 2px solid var(--tertiary, #0066ff);
+	outline-offset: 2px;
 }
 
 .secondary {
 	background: var(--white);
 	color: var(--black);
-	box-shadow: var(--shadowBorder);
+	border: 1px solid rgba(0, 0, 0, 0.12);
 }
 
 .secondary:hover {
 	background: var(--bgSubtle);
-	transform: translateY(-1px);
-	box-shadow: var(--shadowBorderHover), var(--shadowAmbient);
 }
 
 .secondary:active {
-	transform: translateY(0);
+	background: var(--bgSubtle);
 }
 
 .secondary:focus-visible {
-	box-shadow: var(--shadowFocus);
+	outline: 2px solid var(--tertiary, #0066ff);
+	outline-offset: 2px;
 }
 
 .small {

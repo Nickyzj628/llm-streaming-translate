@@ -12,28 +12,27 @@ function buildSystemPrompt(
 	pageMeta: { title: string; description: string } | undefined,
 	targetLang: string,
 ): string {
-	return `你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。
-${
-	pageMeta
-		? `
+	return [
+		`你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。`,
+		pageMeta &&
+			`
 背景信息：
 - 页面标题：${pageMeta.title || "（无）"}
-- 页面描述：${pageMeta.description || "（无）"}`
-		: ""
-}
-
+- 页面描述：${pageMeta.description || "（无）"}`,
+		`
 规则：
-- 输入内容被{{br}}分成若干段，输出也必须是同样数量的段，每段用{{br}}分隔，段间顺序一一对应，绝对不可遗漏、转义或翻译该标记，并注意它的位置，一段都不能少。
-- {{br}}和形如{{varN}}的标记都是"不要翻译、原样照抄"的占位符，严禁翻译、改动或移动它们，其余文字翻译成${targetLang}。
-- 残缺的片段（如单独一个"the"、孤立的单词）如果无法翻译，也要在该段输出一个空格，**绝不能**丢弃该段或把它合并到相邻段。
-- 只输出译文，不要输出任何解释、提示或原文。
-
+- 用户输入的{{seg}}为分段标记，{{varN}}为变量标记，严禁翻译、改动或移动它们。
+- 即使残缺的段落（如单独一个"the"、孤立的单词）难以翻译，也要保留段落标记，**绝不能**丢弃任何标记。
+- 只输出译文，不要输出任何解释、提示或原文。`,
+		`
 示例：
-输入：
-With the new {{br}}JavaScript RegExp engine{{br}}, you are able to create an {{var1}} synchronously as well.
-
-输出：
-使用新的{{br}}JavaScript RegExp引擎{{br}}，您也可以同步创建{{var1}}。`;
+输入："The {{seg}}RegExp Engine{{seg}} can only be created by {{var1}}."
+错误输出："正则引擎{{seg}}只能被{{var1}}创建。"
+原因：丢失了一个{{seg}}标记，导致段落数对不上，严禁这样做！
+正确输出："{{seg}}正则引擎{{seg}}只能被{{var1}}创建。"`,
+	]
+		.filter(Boolean)
+		.join("\n");
 }
 
 export async function streamTranslateOverPort(

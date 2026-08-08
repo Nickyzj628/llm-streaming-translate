@@ -62,7 +62,7 @@ sequenceDiagram
     C->>C: 弹出浮动翻译按钮<br/>show(x, y)<br/>content/FloatingButton.ts
     U->>C: 点击翻译按钮<br/>onClick → startTranslate<br/>content/FloatingButton.ts / index.ts
     C->>C: 提取选区文本节点并包锚点<br/>createInlineTranslator(range, shadowRoot)<br/>content/InlineTranslator.ts
-    C->>C: 生成待翻译文本（每段一个节点，<br/>段间按 {{br}} 分隔、不译内容用 {{varN}} 占位）<br/>getText()<br/>content/InlineTranslator.ts
+    C->>C: 生成待翻译文本（每段一个节点，<br/>段间按 {{seg}} 分隔、不译内容用 {{varN}} 占位）<br/>getText()<br/>content/InlineTranslator.ts
     C->>B: 建立连接并发送文本<br/>runtime.connect("stream-translate") + START<br/>content/index.ts
 
     Note over B: 后台侧（background）

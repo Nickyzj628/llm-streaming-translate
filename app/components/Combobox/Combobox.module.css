@@ -1,3 +1,4 @@
+/* Combobox 样式 —— 遵循 DESIGN.md 极简风格：1px 边框、无阴影层级、无过渡动画 */
 .wrapper {
 	position: relative;
 }
@@ -6,22 +7,18 @@
 .input {
 	width: 100%;
 	padding: 12px 40px 12px 14px;
-	font-size: 16px;
+	font-size: 1rem;
 	font-family: var(--fontFamily);
 	background: var(--white);
 	color: var(--black);
+	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--radiusMd);
-	box-shadow: var(--shadowBorder);
-	transition: box-shadow var(--transitionBase);
 	box-sizing: border-box;
 }
 
-.input:hover {
-	box-shadow: var(--shadowBorderHover);
-}
-
 .input:focus-visible {
-	box-shadow: var(--shadowFocus);
+	outline: 2px solid var(--tertiary, #0066ff);
+	outline-offset: 2px;
 }
 
 .input::placeholder {
@@ -45,7 +42,6 @@
 	color: var(--grey);
 	border-radius: var(--radiusMd);
 	cursor: pointer;
-	transition: color var(--transitionBase);
 }
 
 .toggle:hover {
@@ -64,8 +60,8 @@
 	padding: var(--space2) 0;
 	list-style: none;
 	background: var(--white);
+	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--radiusMd);
-	box-shadow: var(--shadowElevated);
 	z-index: 100;
 }
 

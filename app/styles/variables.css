@@ -6,6 +6,7 @@
 	--grey: #666666;
 	--greyLight: #888888;
 	--primary: #171717;
+	--tertiary: #0066ff; /* DESIGN.md accent color，用于 focus ring 等交互强调 */
 	--success: #0070f3;
 	--danger: #ff5b4f;
 	--white: #ffffff;

@@ -1,4 +1,4 @@
-import { extractTranslatedContent } from "@/utils/protocol";
+import { extractTranslatedContent, SEGMENT_SEPARATOR } from "@/utils/protocol";
 
 export interface InlineTranslatorController {
 	/** 追加译文 chunk，流式解析段分隔并写入对应锚点 */
@@ -7,20 +7,12 @@ export interface InlineTranslatorController {
 	finish: () => void;
 	/** 清理所有引用和辅助元素 */
 	destroy: () => void;
-	/** 返回发送给 LLM 的文本：每个文本节点一段，不译内容用 {{varN}} 占位，段间以 {{br}} 分隔，其余为待翻译文本 */
+	/** 返回发送给 LLM 的文本：每个文本节点一段，不译内容用 {{varN}} 占位，段间以 {{seg}} 分隔，其余为待翻译文本 */
 	getText: () => string;
 }
 
 /** 选中段包裹用的锚点 class（display: contents，仅定位用，无视觉） */
 const SELECTED_CLASS = "llm-selected";
-
-/** 段分隔符：每个文本节点一段，段间用 {{br}} 分隔（不用换行）。
- *  {{br}} 与 ¶ 一样是"单一不可分标记"，段内允许模型自由换行而不破坏"段数对齐"——
- *  模型在长段内插入换行（改写回时按 \n 分隔会错位）不再是问题。
- *  选 {{br}} 而非换行/¶ 是因为：它是类模板变量的占位符形态，本地小模型
- *  （如 hy-mt2）更易识别为"该原样照抄的控制标记"，且正文几乎不出现（避免误分段）。
- *  与 StreamTranslator.ts 的 system prompt 必须一致（两端同步）。 */
-const SEGMENT_SEPARATOR = "{{br}}";
 
 /**
  * 不翻译但须原样保留的元素标签名集合。
@@ -121,7 +113,7 @@ function extractTextNodes(range: Range): {
 	}
 
 	// 阶段二：统一执行 DOM 操作并构造发送文本。
-	// 协议：每个文本节点 = 一段，段数 = 节点数，与 DOM 一一对应，段间用 {{br}} 分隔。
+	// 协议：每个文本节点 = 一段，段数 = 节点数，与 DOM 一一对应，段间用 {{seg}} 分隔。
 	// 段内结构：待翻译部分原样保留；"不译内容"（未选中前/后、preserve 整段）
 	// 统一替换为 {{varN}} 占位符（编号全局递增）。这样模型只需照抄占位符、翻译其余部分，
 	// 无需理解任何标签结构（大幅降低本地小模型的理解负担）。
@@ -152,7 +144,7 @@ function extractTextNodes(range: Range): {
 		// 模型只看得到占位符，不会去翻译它们。
 		//
 		// 【换行折叠】节点内可能含 \n（如 HTML 源码美化、white-space:pre 文本）。
-		// 虽然 {{br}} 分隔已保证段内换行不破坏段数对齐，但保留折叠可减少段内换行噪音、
+		// 虽然 {{seg}} 分隔已保证段内换行不破坏段数对齐，但保留折叠可减少段内换行噪音、
 		// 让模型聚焦翻译。因此把节点内连续换行折叠为单个空格。
 		// 换行基本是源码空白，折叠成空格视觉一致；未选中部分由 DOM 原文兜底不受影响。
 		const before = text.slice(0, item.start).replace(/\n+/g, " ");
@@ -172,7 +164,7 @@ function extractTextNodes(range: Range): {
 		);
 	}
 
-	// 待翻译文本 = 每个文本节点用 {{br}} 分隔（段数对齐协议）。
+	// 待翻译文本 = 每个文本节点用 {{seg}} 分隔（段数对齐协议）。
 	// 语境信息由 background 从网页元数据（title/description）注入 system prompt，
 	// 这里不再包任何上下文标记，保持输入极简、只含待翻译文本。
 	const joinedText = rows.join(SEGMENT_SEPARATOR);

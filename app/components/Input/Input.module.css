@@ -1,31 +1,29 @@
 .label {
 	display: block;
-	font-size: 13px;
+	font-size: 0.875rem;
 	font-weight: var(--medium);
 	margin-bottom: var(--space2);
 	color: var(--grey);
 	letter-spacing: -0.01em;
 }
 
+/* 输入框：DESIGN.md 用 1px 边框描边，无过渡动画 */
 .input {
 	width: 100%;
 	padding: 12px 14px;
-	font-size: 16px;
+	font-size: 1rem;
 	font-family: var(--fontFamily);
 	background: var(--white);
 	color: var(--black);
+	border: 1px solid rgba(0, 0, 0, 0.12);
 	border-radius: var(--radiusMd);
-	box-shadow: var(--shadowBorder);
-	transition: box-shadow var(--transitionBase);
 	box-sizing: border-box;
 }
 
-.input:hover {
-	box-shadow: var(--shadowBorderHover);
-}
-
+/* 仅保留 focus ring 作为键盘交互反馈（DESIGN.md: 2px accent offset 2px） */
 .input:focus-visible {
-	box-shadow: var(--shadowFocus);
+	outline: 2px solid var(--tertiary, #0066ff);
+	outline-offset: 2px;
 }
 
 .input::placeholder {
