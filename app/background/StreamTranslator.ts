@@ -13,17 +13,14 @@ function buildSystemPrompt(
 	targetLang: string,
 ): string {
 	return `你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。
-
 ${
 	pageMeta
 		? `
-上下文语境：
+背景信息：
 - 页面标题：${pageMeta.title || "（无）"}
-- 页面描述：${pageMeta.description || "（无）"}
-`
+- 页面描述：${pageMeta.description || "（无）"}`
 		: ""
 }
-
 
 规则：
 - 输入内容被{{br}}分成若干段，输出也必须是同样数量的段，每段用{{br}}分隔，段间顺序一一对应，绝对不可遗漏、转义或翻译该标记，并注意它的位置，一段都不能少。

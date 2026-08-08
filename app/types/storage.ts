@@ -8,8 +8,8 @@ export interface StorageSchema {
 
 export const defaultStorage: StorageSchema = {
 	baseUrl: "https://api.deepseek.com",
-	model: "deepseek-chat",
+	model: "deepseek-v4-flash",
 	apiKey: "",
-	body: "",
-	targetLang: "Chinese",
+	body: `{"thinking": {"type": "disabled"}}`,
+	targetLang: "简体中文",
 };

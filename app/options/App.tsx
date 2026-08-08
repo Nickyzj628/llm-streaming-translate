@@ -50,10 +50,7 @@ const PRESETS: Preset[] = [
 // 测试板块的默认文本节点：与 StreamTranslator.ts 的 system prompt 示例保持一致，
 // 覆盖两种协议形态（整段翻译 / 含占位符的不翻译内容）。
 // 每个元素 = 一个文本节点（协议的一段，翻译时逐段写回）
-const TEST_SAMPLE = [
-	"The quick brown fox jumps over the lazy dog,",
-	"it contains all 26 letters of the {{var1}}."
-];
+const TEST_SAMPLE = ["The quick brown fox jumps over the lazy dog."];
 
 const App: Component = () => {
 	const [targetLang, setTargetLang] = createSignal("");
@@ -475,9 +472,6 @@ const App: Component = () => {
 
 			<div class={styles.testPanel}>
 				<h3>测试翻译</h3>
-				<p class={styles.hint}>
-					每个输入框代表一个文本节点，{"{{varN}}"}占位符代表不翻译的内容。
-				</p>
 				<ul class={styles.testNodeList}>
 					<For each={testSource()}>
 						{(line, i) => (
