@@ -118,12 +118,10 @@ export function show(mouseX: number, mouseY: number): void {
 	currentButton = wrapper;
 
 	requestAnimationFrame(() => {
-		requestAnimationFrame(() => {
-			if (wrapper.isConnected) {
-				wrapper.style.opacity = "1";
-				wrapper.style.transform = "scale(1)";
-			}
-		});
+		if (wrapper.isConnected) {
+			wrapper.style.opacity = "1";
+			wrapper.style.transform = "scale(1)";
+		}
 	});
 }
 

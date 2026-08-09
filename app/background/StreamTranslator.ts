@@ -1,4 +1,8 @@
-import { chatCompletions, defineModel } from "@nickyzj2023/utils";
+import {
+	chatCompletions,
+	defineModel,
+	extractErrorMessage,
+} from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import { getStorage } from "@/utils/storage";
 
@@ -22,10 +26,14 @@ function buildSystemPrompt(
 		`
 规则：
 - 用户输入的{{seg}}为分段标记，{{varN}}为变量标记，严禁翻译、改动或移动它们。
-- 即使残缺的段落（如单独一个"the"、孤立的单词）难以翻译，也要保留段落标记，**绝不能**丢弃任何标记。
+- 即使残缺的段落（如单独一个"the"等无实际意义的单词）难以翻译，也要保留段落标记，**绝不能**丢弃任何标记。
 - 只输出译文，不要输出任何解释、提示或原文。`,
 		`
-示例：
+示例1：
+输入："The quick brown fox jumps over the lazy dog."
+正确输出："敏捷的棕色狐狸跳过了懒狗。"
+
+示例2：
 输入："The {{seg}}RegExp Engine{{seg}} can only be created by {{var1}}."
 错误输出："正则引擎{{seg}}只能被{{var1}}创建。"
 原因：丢失了一个{{seg}}标记，导致段落数对不上，严禁这样做！
@@ -51,7 +59,7 @@ export async function streamTranslateOverPort(
 	if (!baseUrl) {
 		port.postMessage({
 			type: "ERROR",
-			error: "API Base URL 未配置，请在选项页面中设置",
+			error: "API Base URL未配置，请在选项页面中设置",
 		});
 		return;
 	}
@@ -69,7 +77,7 @@ export async function streamTranslateOverPort(
 		try {
 			customBody = JSON.parse(body) as Record<string, unknown>;
 		} catch {
-			port.postMessage({ type: "ERROR", error: "自定义请求体 JSON 格式无效" });
+			port.postMessage({ type: "ERROR", error: "自定义请求体JSON格式无效" });
 			return;
 		}
 	}
@@ -107,9 +115,8 @@ export async function streamTranslateOverPort(
 		}
 
 		port.postMessage({ type: "DONE" });
-	} catch (err) {
-		const errorMessage = err instanceof Error ? err.message : String(err);
-		console.error("[LLM Streaming Translator BG] 翻译失败");
-		port.postMessage({ type: "ERROR", error: errorMessage });
+	} catch (e) {
+		console.error("[background]翻译失败");
+		port.postMessage({ type: "ERROR", error: extractErrorMessage(e) });
 	}
 }

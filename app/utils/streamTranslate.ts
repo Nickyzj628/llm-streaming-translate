@@ -12,7 +12,7 @@ import browser from "webextension-polyfill";
 import type { StreamTranslatePortMessage } from "@/types/messages";
 
 /** background 端监听的长连接端口名（content / options / background 三端一致） */
-const STREAM_TRANSLATE_PORT = "stream-translate";
+export const STREAM_TRANSLATE_PORT = "stream-translate";
 
 export interface StreamTranslateCallbacks {
 	/** 每个译文 chunk 到达时回调（消费方各自决定如何写回译文） */

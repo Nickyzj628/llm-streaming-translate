@@ -21,6 +21,8 @@
 
 ## 架构要点
 
+> 完整调用链、文件职责表与协议说明见 **`ARCHITECTURE.md`**（新人阅读入口，避免多文件跳转）。
+
 ### 翻译流程（选词 → 流式原地替换）
 1. `app/content/index.ts`：监听选区，弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。
 2. 点击后 `createInlineTranslator(range, shadowRoot)`（`app/content/InlineTranslator.ts`）提取选区内的文本节点，**每个文本节点一段，段间用 `{{seg}}` 分隔**构造协议文本（不译内容用 `{{varN}}` 占位符，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。

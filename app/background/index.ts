@@ -1,6 +1,8 @@
+import { extractErrorMessage } from "@nickyzj2023/utils";
 import browser from "webextension-polyfill";
 import { streamTranslateOverPort } from "@/background/StreamTranslator";
 import type { StreamTranslatePortMessage } from "@/types/messages";
+import { STREAM_TRANSLATE_PORT } from "@/utils/streamTranslate";
 
 browser.runtime.onInstalled.addListener((): void => {
 	console.log("Extension installed");
@@ -14,16 +16,13 @@ actionApi?.onClicked?.addListener((): void => {
 });
 
 browser.runtime.onConnect.addListener((port) => {
-	if (port.name !== "stream-translate") return;
+	if (port.name !== STREAM_TRANSLATE_PORT) return;
 
 	const messageHandler = (message: StreamTranslatePortMessage) => {
 		if (message.type === "START") {
-			streamTranslateOverPort(message.text, port, message.pageMeta).catch(
-				(err) => {
-					const errorMessage = err instanceof Error ? err.message : String(err);
-					port.postMessage({ type: "ERROR", error: errorMessage });
-				},
-			);
+			streamTranslateOverPort(message.text, port, message.pageMeta).catch((e) => {
+				port.postMessage({ type: "ERROR", error: extractErrorMessage(e) });
+			});
 		}
 	};
 
