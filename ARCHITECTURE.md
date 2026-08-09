@@ -100,7 +100,7 @@ sequenceDiagram
 | `stripIncompleteSegmentPrefix` | `utils/protocol.ts` | 剥离流式中"未完成的分隔符前缀"（`{{seg`/`{{se`/`{{s`/`{{`） |
 | `extractTranslatedContent` | `utils/protocol.ts` | 删除占位符得到纯译文 |
 | 端口消息协议 | `types/messages.ts` | START/CHUNK/DONE/ERROR，background+content+options 三端一致 |
-| 端口名 `stream-translate` | `utils/streamTranslate.ts` | 三端一致 |
+| 端口名 `stream-translate` | `types/messages.ts` | 三端一致 |
 
 > ⚠️ 改 prompt（`StreamTranslator.buildSystemPrompt`）或 `InlineTranslator.ts` 的分段构造 /
 > `protocol.ts` 的解析，必须 content / background / options 三端同步，否则段数对齐会错位

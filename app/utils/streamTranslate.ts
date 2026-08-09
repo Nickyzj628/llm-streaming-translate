@@ -9,10 +9,10 @@
  * 消息协议见 types/messages.ts（START/CHUNK/DONE/ERROR），改动需两端同步。
  */
 import browser from "webextension-polyfill";
-import type { StreamTranslatePortMessage } from "@/types/messages";
-
-/** background 端监听的长连接端口名（content / options / background 三端一致） */
-export const STREAM_TRANSLATE_PORT = "stream-translate";
+import {
+	STREAM_TRANSLATE_PORT,
+	type StreamTranslatePortMessage,
+} from "@/types/messages";
 
 export interface StreamTranslateCallbacks {
 	/** 每个译文 chunk 到达时回调（消费方各自决定如何写回译文） */
@@ -100,11 +100,19 @@ export function streamTranslate(
 	port.onMessage.addListener(messageHandler);
 	port.onDisconnect.addListener(disconnectHandler);
 
-	port.postMessage({
-		type: "START",
-		text: options.text,
-		...(options.pageMeta ? { pageMeta: options.pageMeta } : {}),
-	});
+	// 连接后立即发送 START。这里包 try/catch 是防御性保护：
+	// 极端情况下（如 background 刚建立连接就被回收），postMessage 可能抛
+	// "Attempting to use a disconnected port object"，包住避免变成 uncaught。
+	// 若发送失败，onDisconnect 会触发，消费方走回滚兜底。
+	try {
+		port.postMessage({
+			type: "START",
+			text: options.text,
+			...(options.pageMeta ? { pageMeta: options.pageMeta } : {}),
+		});
+	} catch {
+		cleanup(true);
+	}
 
 	return {
 		abort: () => cleanup(false),

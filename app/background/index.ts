@@ -1,8 +1,13 @@
 import { extractErrorMessage } from "@nickyzj2023/utils";
 import browser from "webextension-polyfill";
-import { streamTranslateOverPort } from "@/background/StreamTranslator";
-import type { StreamTranslatePortMessage } from "@/types/messages";
-import { STREAM_TRANSLATE_PORT } from "@/utils/streamTranslate";
+import {
+	safePostMessage,
+	streamTranslateOverPort,
+} from "@/background/StreamTranslator";
+import {
+	STREAM_TRANSLATE_PORT,
+	type StreamTranslatePortMessage,
+} from "@/types/messages";
 
 browser.runtime.onInstalled.addListener((): void => {
 	console.log("Extension installed");
@@ -21,7 +26,12 @@ browser.runtime.onConnect.addListener((port) => {
 	const messageHandler = (message: StreamTranslatePortMessage) => {
 		if (message.type === "START") {
 			streamTranslateOverPort(message.text, port, message.pageMeta).catch((e) => {
-				port.postMessage({ type: "ERROR", error: extractErrorMessage(e) });
+				// 用 safePostMessage：若此处端口已断开（SW 被回收），
+				// 直接 postMessage 会二次抛错变成 Uncaught (in promise)。
+				safePostMessage(port, {
+					type: "ERROR",
+					error: extractErrorMessage(e),
+				});
 			});
 		}
 	};

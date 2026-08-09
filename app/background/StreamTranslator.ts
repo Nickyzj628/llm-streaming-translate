@@ -4,7 +4,30 @@ import {
 	extractErrorMessage,
 } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
+import type { StreamTranslatePortMessage } from "@/types/messages";
 import { getStorage } from "@/utils/storage";
+
+/**
+ * 安全地向端口发送消息。
+ *
+ * 为什么需要它：本函数运行在 background service worker（MV3）里，而 SW 是
+ * 可被回收的。当 SW 空闲超时被回收（或崩溃）后再被唤醒时，原来建立的 port
+ * 已经断开；此时再 postMessage 会抛 "Attempting to use a disconnected port
+ * object"。这类错误发生在一个没有挂 catch 的异步回调（如 for-await 流式循环）
+ * 里就会出现 Uncaught (in promise)。因此统一在这里吞掉并告警，避免二次抛错。
+ */
+export function safePostMessage(
+	port: browser.Runtime.Port,
+	message: StreamTranslatePortMessage,
+): void {
+	try {
+		port.postMessage(message);
+	} catch {
+		// 端口已断开（SW 被回收/崩溃）：消息无处可达，静默丢弃即可。
+		// 消费方（content/options）收到 onDisconnect 会自行回滚，无需这边兜底。
+		console.warn("[background]端口已断开，丢弃消息", message.type);
+	}
+}
 
 /**
  * 构造系统提示词。
@@ -57,7 +80,7 @@ export async function streamTranslateOverPort(
 	} = await getStorage(["baseUrl", "model", "apiKey", "body", "targetLang"]);
 
 	if (!baseUrl) {
-		port.postMessage({
+		safePostMessage(port, {
 			type: "ERROR",
 			error: "API Base URL未配置，请在选项页面中设置",
 		});
@@ -65,7 +88,7 @@ export async function streamTranslateOverPort(
 	}
 
 	if (!modelName) {
-		port.postMessage({
+		safePostMessage(port, {
 			type: "ERROR",
 			error: "模型未配置，请在选项页面中设置",
 		});
@@ -77,7 +100,10 @@ export async function streamTranslateOverPort(
 		try {
 			customBody = JSON.parse(body) as Record<string, unknown>;
 		} catch {
-			port.postMessage({ type: "ERROR", error: "自定义请求体JSON格式无效" });
+			safePostMessage(port, {
+				type: "ERROR",
+				error: "自定义请求体JSON格式无效",
+			});
 			return;
 		}
 	}
@@ -110,13 +136,13 @@ export async function streamTranslateOverPort(
 
 		for await (const { content } of result) {
 			if (content) {
-				port.postMessage({ type: "CHUNK", chunk: content });
+				safePostMessage(port, { type: "CHUNK", chunk: content });
 			}
 		}
 
-		port.postMessage({ type: "DONE" });
+		safePostMessage(port, { type: "DONE" });
 	} catch (e) {
 		console.error("[background]翻译失败");
-		port.postMessage({ type: "ERROR", error: extractErrorMessage(e) });
+		safePostMessage(port, { type: "ERROR", error: extractErrorMessage(e) });
 	}
 }
