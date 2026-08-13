@@ -4,6 +4,11 @@ let currentParent: ShadowRoot | HTMLElement = document.body;
 let currentButton: HTMLElement | null = null;
 let clickHandler: ((e: MouseEvent) => void) | null = null;
 
+/** 按钮的宽高（show() 里写死的 40px，保持同步） */
+const BUTTON_SIZE = 40;
+/** 按钮与视口边缘的最小间距 */
+const EDGE_GAP = 4;
+
 export function setParent(parent: ShadowRoot | HTMLElement): void {
 	currentParent = parent;
 }
@@ -58,12 +63,22 @@ export function show(mouseX: number, mouseY: number): void {
 	hide();
 	ensureClipPath();
 
+	// 钳制到视口内：在靠近右/下边缘划词时按钮不越界（越界部分点不到也看不见）
+	const x = Math.max(
+		EDGE_GAP,
+		Math.min(mouseX, window.innerWidth - BUTTON_SIZE - EDGE_GAP),
+	);
+	const y = Math.max(
+		EDGE_GAP,
+		Math.min(mouseY, window.innerHeight - BUTTON_SIZE - EDGE_GAP),
+	);
+
 	const wrapper = document.createElement("div");
 	wrapper.id = "llm-translate-btn";
 	wrapper.style.cssText = `
     position: fixed;
-    left: ${mouseX}px;
-    top: ${mouseY}px;
+    left: ${x}px;
+    top: ${y}px;
     width: 40px;
     height: 40px;
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12)) drop-shadow(0 4px 8px rgba(0,0,0,0.1));

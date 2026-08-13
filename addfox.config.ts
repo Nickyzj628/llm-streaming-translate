@@ -4,7 +4,7 @@ import { defineConfig } from "addfox";
 
 const baseManifest = {
 	name: "LLM Streaming Translator",
-	version: "1.2.3",
+	version: "1.2.4",
 	manifest_version: 3,
 	description: "基于大模型的流式划词翻译插件",
 	permissions: ["activeTab", "storage"],
@@ -59,10 +59,7 @@ export default defineConfig({
 		chromium: chromiumManifest,
 		firefox: firefoxManifest,
 	},
-	plugins: [
-		pluginBabel({ include: /\.(?:jsx|tsx)$/ }),
-		pluginSolid(),
-	],
+	plugins: [pluginBabel({ include: /\.(?:jsx|tsx)$/ }), pluginSolid()],
 	rsbuild: {
 		resolve: {
 			alias: {

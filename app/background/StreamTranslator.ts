@@ -1,11 +1,17 @@
-import {
-	chatCompletions,
-	defineModel,
-	extractErrorMessage,
-} from "@nickyzj2023/utils";
+import { extractErrorMessage, parseSSE } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import type { StreamTranslatePortMessage } from "@/types/messages";
 import { getStorage } from "@/utils/storage";
+
+/** 单次流式翻译的控制句柄：abort() 立即中止底层 HTTP 连接 */
+export interface StreamTranslationController {
+	abort: () => void;
+}
+
+/** OpenAI 兼容流式响应的单帧结构（只取需要的内容增量字段） */
+interface StreamChunk {
+	choices?: Array<{ delta?: { content?: string } }>;
+}
 
 /**
  * 安全地向端口发送消息。
@@ -16,7 +22,7 @@ import { getStorage } from "@/utils/storage";
  * object"。这类错误发生在一个没有挂 catch 的异步回调（如 for-await 流式循环）
  * 里就会出现 Uncaught (in promise)。因此统一在这里吞掉并告警，避免二次抛错。
  */
-export function safePostMessage(
+function safePostMessage(
 	port: browser.Runtime.Port,
 	message: StreamTranslatePortMessage,
 ): void {
@@ -66,83 +72,138 @@ function buildSystemPrompt(
 		.join("\n");
 }
 
-export async function streamTranslateOverPort(
+/** 非 2xx 响应：尽量提取响应体里的 error.message，构造可读错误信息 */
+async function readHttpError(response: Response): Promise<string> {
+	const raw = await response.text().catch(() => "");
+	try {
+		const parsed = JSON.parse(raw) as { error?: { message?: unknown } };
+		if (typeof parsed.error?.message === "string") {
+			return `HTTP ${response.status}: ${parsed.error.message}`;
+		}
+	} catch {
+		// 响应体不是 JSON（如网关的 HTML 错误页）：走截断展示兜底
+	}
+	const detail = raw.trim().slice(0, 200);
+	return detail
+		? `HTTP ${response.status}: ${detail}`
+		: `HTTP ${response.status}`;
+}
+
+/**
+ * 发起一次流式翻译，逐 chunk 经端口回传，返回可中止句柄。
+ *
+ * 为什么用原生 fetch + @nickyzj2023/utils 的 parseSSE 而不是该库的
+ * chatCompletions：当前版本（1.0.85/1.0.86）的 chatCompletions 不暴露
+ * AbortSignal，流一旦开始就无法取消——content 端打断翻译（重新划词/页面卸载）
+ * 后，background 只能把整个流跑完，白白消耗 API token、拖住 SW 生命周期。
+ * 这里保留库里的 parseSSE 解析 SSE（维持"不是 OpenAI 官方 SDK"的约定），
+ * 自己持有 AbortController，端口断开时立即硬中止 HTTP 连接。
+ */
+export function startStreamTranslation(
 	text: string,
 	port: browser.Runtime.Port,
 	pageMeta?: { title: string; description: string },
-): Promise<void> {
-	const {
-		baseUrl,
-		model: modelName,
-		apiKey,
-		body,
-		targetLang,
-	} = await getStorage(["baseUrl", "model", "apiKey", "body", "targetLang"]);
+): StreamTranslationController {
+	const controller = new AbortController();
+	void run();
 
-	if (!baseUrl) {
-		safePostMessage(port, {
-			type: "ERROR",
-			error: "API Base URL未配置，请在选项页面中设置",
-		});
-		return;
-	}
-
-	if (!modelName) {
-		safePostMessage(port, {
-			type: "ERROR",
-			error: "模型未配置，请在选项页面中设置",
-		});
-		return;
-	}
-
-	let customBody: Record<string, unknown> = {};
-	if (body) {
+	async function run(): Promise<void> {
 		try {
-			customBody = JSON.parse(body) as Record<string, unknown>;
-		} catch {
+			const {
+				baseUrl,
+				model: modelName,
+				apiKey,
+				body,
+				targetLang,
+			} = await getStorage(["baseUrl", "model", "apiKey", "body", "targetLang"]);
+
+			// 会话被中止后不再向端口发任何消息
+			// （同端口可能已开始新会话，旧会话的迟到错误会污染新会话）
+			const sendError = (error: string): void => {
+				if (!controller.signal.aborted) {
+					safePostMessage(port, { type: "ERROR", error });
+				}
+			};
+
+			if (!baseUrl) {
+				sendError("API Base URL未配置，请在选项页面中设置");
+				return;
+			}
+
+			if (!modelName) {
+				sendError("模型未配置，请在选项页面中设置");
+				return;
+			}
+
+			let customBody: Record<string, unknown> = {};
+			if (body) {
+				try {
+					customBody = JSON.parse(body) as Record<string, unknown>;
+				} catch {
+					sendError("自定义请求体JSON格式无效");
+					return;
+				}
+			}
+
+			const messages: Array<{ role: "system" | "user"; content: string }> = [
+				{
+					role: "system",
+					content: buildSystemPrompt(pageMeta, targetLang),
+				},
+				{
+					role: "user",
+					content: text,
+				},
+			];
+
+			const response = await fetch(
+				`${baseUrl.replace(/\/$/, "")}/chat/completions`,
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${apiKey}`,
+					},
+					body: JSON.stringify({
+						model: modelName,
+						messages,
+						stream: true,
+						...customBody,
+					}),
+					signal: controller.signal,
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error(await readHttpError(response));
+			}
+
+			for await (const data of parseSSE<StreamChunk>(response)) {
+				if (controller.signal.aborted) return;
+				// parseSSE 对无法解析为 JSON 的行（如 SSE 结束哨兵 [DONE]）
+				// 原样 yield 字符串，直接跳过
+				if (typeof data === "string") continue;
+				const content = data.choices?.[0]?.delta?.content;
+				if (content) {
+					safePostMessage(port, { type: "CHUNK", chunk: content });
+				}
+			}
+
+			if (!controller.signal.aborted) {
+				safePostMessage(port, { type: "DONE" });
+			}
+		} catch (e) {
+			// 主动中止（AbortError）：静默返回，不向端口报错
+			if (controller.signal.aborted) return;
+			console.error("[background]翻译失败：", e);
 			safePostMessage(port, {
 				type: "ERROR",
-				error: "自定义请求体JSON格式无效",
+				error: extractErrorMessage(e),
 			});
-			return;
 		}
 	}
 
-	try {
-		const messages: Array<{
-			role: "system" | "user";
-			content: string;
-		}> = [
-			{
-				role: "system",
-				content: buildSystemPrompt(pageMeta, targetLang),
-			},
-			{
-				role: "user",
-				content: text,
-			},
-		];
-
-		const result = await chatCompletions(
-			defineModel({
-				baseUrl: baseUrl.replace(/\/$/, ""),
-				apiKey,
-				model: modelName,
-				customBody,
-			}),
-			messages,
-			{ stream: true },
-		);
-
-		for await (const { content } of result) {
-			if (content) {
-				safePostMessage(port, { type: "CHUNK", chunk: content });
-			}
-		}
-
-		safePostMessage(port, { type: "DONE" });
-	} catch (e) {
-		console.error("[background]翻译失败");
-		safePostMessage(port, { type: "ERROR", error: extractErrorMessage(e) });
-	}
+	return {
+		abort: (): void => controller.abort(),
+	};
 }

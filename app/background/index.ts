@@ -1,8 +1,7 @@
-import { extractErrorMessage } from "@nickyzj2023/utils";
 import browser from "webextension-polyfill";
 import {
-	safePostMessage,
-	streamTranslateOverPort,
+	type StreamTranslationController,
+	startStreamTranslation,
 } from "@/background/StreamTranslator";
 import {
 	STREAM_TRANSLATE_PORT,
@@ -23,22 +22,27 @@ actionApi?.onClicked?.addListener((): void => {
 browser.runtime.onConnect.addListener((port) => {
 	if (port.name !== STREAM_TRANSLATE_PORT) return;
 
-	const messageHandler = (message: StreamTranslatePortMessage) => {
-		if (message.type === "START") {
-			streamTranslateOverPort(message.text, port, message.pageMeta).catch((e) => {
-				// 用 safePostMessage：若此处端口已断开（SW 被回收），
-				// 直接 postMessage 会二次抛错变成 Uncaught (in promise)。
-				safePostMessage(port, {
-					type: "ERROR",
-					error: extractErrorMessage(e),
-				});
-			});
-		}
+	/** 当前端口上正在进行的翻译（同端口重复 START / 端口断开时中止） */
+	let current: StreamTranslationController | null = null;
+
+	const messageHandler = (message: StreamTranslatePortMessage): void => {
+		if (message.type !== "START") return;
+
+		// 同端口重复 START：先打断上一会话再开新会话，
+		// 避免两个流交错写同一端口、译文互相污染
+		current?.abort();
+		current = startStreamTranslation(message.text, port, message.pageMeta);
+	};
+
+	const disconnectHandler = (): void => {
+		// content 主动 abort / 页面卸载 / SW 重启都会断开端口：
+		// 立即中止在途 LLM 请求，避免为无人消费的会话继续消耗 token
+		current?.abort();
+		current = null;
+		port.onMessage.removeListener(messageHandler as (message: unknown) => void);
+		port.onDisconnect.removeListener(disconnectHandler);
 	};
 
 	port.onMessage.addListener(messageHandler as (message: unknown) => void);
-
-	port.onDisconnect.addListener(() => {
-		port.onMessage.removeListener(messageHandler as (message: unknown) => void);
-	});
+	port.onDisconnect.addListener(disconnectHandler);
 });

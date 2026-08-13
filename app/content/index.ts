@@ -72,7 +72,7 @@ function handleMouseUp(e: MouseEvent): void {
 		const selectedText = getSelectedText();
 		if (selectedText.length > 0) {
 			showButton(e.clientX + 8, e.clientY + 8);
-			onClick(() => startTranslate(selectedText));
+			onClick(startTranslate);
 		} else {
 			hideButton();
 		}
@@ -95,7 +95,7 @@ function abortCurrent(): void {
 	isTranslating = false;
 }
 
-function startTranslate(_text: string): void {
+function startTranslate(): void {
 	// 打断前一个进行中的翻译
 	if (isTranslating) {
 		abortCurrent();
@@ -109,10 +109,17 @@ function startTranslate(_text: string): void {
 	selection.removeAllRanges();
 
 	// 创建原地翻译器，提取文本节点、建立锚点、得到分段协议文本
-	const translator = createInlineTranslator(range, shadowRoot);
-	currentTranslator = translator;
+	const translator = createInlineTranslator(range);
 	const segmentedText = translator.getText();
 
+	// 选区内没有可翻译的文本节点（如选区全部落在被跳过的位置）：
+	// 销毁锚点直接放弃，不发无意义的空请求
+	if (segmentedText === "") {
+		translator.destroy();
+		return;
+	}
+
+	currentTranslator = translator;
 	isTranslating = true;
 	hideButton();
 
@@ -130,24 +137,27 @@ function startTranslate(_text: string): void {
 	currentStream = streamTranslate({
 		text: segmentedText,
 		pageMeta: getPageMeta(),
+		// 回调闭包直接引用本次会话的 translator（而非模块级 currentTranslator）：
+		// 即使中途被新会话替换，旧会话的迟到回调也只会操作已销毁的旧对象，
+		// 不会把旧会话的 chunk 写进新会话的锚点
 		// 流式写回：translator 内部按段分隔拆解并写入对应锚点
 		onChunk: (chunk) => {
-			currentTranslator?.appendChunk(chunk);
+			translator.appendChunk(chunk);
 		},
 		onDone: () => {
 			// finish() 内部做尽力对齐：尽量保留已译部分，缺失段补原文
-			currentTranslator?.finish();
+			translator.finish();
 			finish();
 		},
 		onError: (error) => {
 			console.error(error);
 			// 失败回滚：销毁翻译器，恢复原文 DOM
-			currentTranslator?.destroy();
+			translator.destroy();
 			finish();
 		},
 		onDisconnect: () => {
 			// 端口被异常断开（background 崩溃/被关闭）：回滚原文
-			currentTranslator?.destroy();
+			translator.destroy();
 			finish();
 		},
 	});

@@ -4,6 +4,8 @@
  * 导出：把 storage 内容序列化下载为 JSON；导入：解析 JSON、做 StorageSchema
  * 运行时类型校验（消除原 App.tsx 里 parsed as any 的无类型访问），再写回 storage。
  */
+
+import { defaultStorage } from "../../types/storage";
 import { getAllStorage, setStorage } from "../../utils/storage";
 
 /** 与 StorageSchema 一致的可导入字段（targetLang 可选，缺省回退"简体中文"） */
@@ -49,8 +51,12 @@ export async function exportConfig(): Promise<void> {
 	const a = document.createElement("a");
 	a.href = url;
 	a.download = exportFileName();
+	// Firefox 对未挂载到文档的 <a> 点击可能不触发下载，先挂载再点
+	document.body.appendChild(a);
 	a.click();
-	URL.revokeObjectURL(url);
+	a.remove();
+	// 延迟 revoke：部分浏览器需要等下载任务真正建立，立即 revoke 会截断下载
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /**
@@ -73,8 +79,8 @@ export async function importConfig(
 		return null;
 	}
 
-	// targetLang 可选，缺省回退"简体中文"（与 defaultStorage 一致）
-	const targetLang = parsed.targetLang ?? "简体中文";
+	// targetLang 可选，缺省回退 defaultStorage 的默认语言
+	const targetLang = parsed.targetLang ?? defaultStorage.targetLang;
 
 	const config: ImportableConfig = {
 		baseUrl: parsed.baseUrl,

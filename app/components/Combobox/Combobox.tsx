@@ -2,6 +2,7 @@ import type { Component } from "solid-js";
 import {
 	createMemo,
 	createSignal,
+	createUniqueId,
 	For,
 	onCleanup,
 	onMount,
@@ -38,6 +39,8 @@ const Combobox: Component<ComboboxProps> = (props) => {
 	// 过滤关键字：与 value 解耦——点箭头/聚焦时清空它即可显示全部候选，
 	// 否则已保存的模型名会按内容过滤掉大部分选项
 	const [query, setQuery] = createSignal("");
+	// 候选列表 id（每个实例唯一，供 aria-controls / aria-activedescendant 引用）
+	const listboxId = createUniqueId();
 	let wrapperRef: HTMLDivElement | undefined;
 
 	// 过滤逻辑：query 为空时显示全部，否则大小写不敏感的子串匹配
@@ -108,6 +111,16 @@ const Combobox: Component<ComboboxProps> = (props) => {
 			<input
 				class={styles.input}
 				type="text"
+				role="combobox"
+				aria-expanded={open()}
+				aria-haspopup="listbox"
+				aria-controls={listboxId}
+				aria-autocomplete="list"
+				aria-activedescendant={
+					open() && activeIndex() >= 0
+						? `${listboxId}-option-${activeIndex()}`
+						: undefined
+				}
 				value={props.value}
 				placeholder={props.placeholder}
 				spellcheck={false}
@@ -140,17 +153,19 @@ const Combobox: Component<ComboboxProps> = (props) => {
 				</svg>
 			</button>
 			<Show when={open()}>
-				<div class={styles.list}>
+				<div class={styles.list} role="listbox" id={listboxId}>
 					<Show when={filtered().length === 0}>
 						<div class={styles.empty}>无匹配项</div>
 					</Show>
 					<For each={filtered()}>
 						{(option, index) => (
 							<div
+								id={`${listboxId}-option-${index()}`}
 								class={`${styles.option} ${
 									index() === activeIndex() ? styles.active : ""
 								}`.trim()}
 								role="option"
+								aria-selected={index() === activeIndex()}
 								// 阻止 mousedown 抢焦点，避免 input 失焦导致体验割裂
 								tabIndex={-1}
 								onMouseDown={(e) => e.preventDefault()}

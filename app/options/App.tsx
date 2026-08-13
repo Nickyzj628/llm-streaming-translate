@@ -5,6 +5,7 @@ import Combobox from "../components/Combobox/Combobox";
 import Input from "../components/Input/Input";
 import Toast from "../components/Toast/Toast";
 import { useToast } from "../hooks/useToast";
+import { defaultStorage } from "../types/storage";
 import styles from "./App.module.css";
 import ImportExportPanel from "./components/ImportExportPanel";
 import TestPanel from "./components/TestPanel";
@@ -65,7 +66,10 @@ const App: Component = () => {
 		try {
 			const ids = await handle.promise;
 			setModels(ids);
-			if (ids.length > 0 && !ids.includes(form.model)) {
+			// 只在模型名为空时自动选用第一个候选。用户手动输入的模型名
+			//（供应商可能没有 /models 接口）不应被刷新结果覆盖，
+			// 否则会悄悄替换掉用户辛苦敲进去的自定义模型名。
+			if (ids.length > 0 && !form.model) {
 				setForm({ model: ids[0] ?? "" });
 			}
 		} catch (err) {
@@ -92,7 +96,7 @@ const App: Component = () => {
 			model: config.model,
 			apiKey: config.apiKey,
 			body: config.body,
-			targetLang: config.targetLang ?? "简体中文",
+			targetLang: config.targetLang ?? defaultStorage.targetLang,
 		});
 	};
 

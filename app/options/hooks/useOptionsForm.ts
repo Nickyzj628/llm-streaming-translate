@@ -34,7 +34,7 @@ const EMPTY_FORM: OptionsForm = {
 };
 
 export interface UseOptionsForm {
-	/** 表单 store 本身（Solid store，字段读取用 form.xxx() 的形式） */
+	/** 表单 store 本身（Solid store：字段读取直接用 form.xxx 属性访问，自带响应式追踪，无需调用） */
 	form: OptionsForm;
 	/** store 的 setter：支持 setForm("baseUrl", v) 点路径更新，或 setForm({...}) 批量更新 */
 	setForm: SetStoreFunction<OptionsForm>;
