@@ -6,23 +6,11 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": [
-			"**/app/**/*.ts",
-			"**/app/**/*.tsx",
-			"**/*.json",
-			"**/*.ts",
-			"!**/.addfox/**",
-			"!**/node_modules/**",
-			"!**/pnpm-lock.yaml",
-			"!**/*.scss"
-		]
+		"includes": ["addfox.config.ts", "app/**/*.ts", "app/**/*.tsx"]
 	},
 	"formatter": {
-		"enabled": true,
 		"useEditorconfig": false,
-		"indentStyle": "tab",
 		"indentWidth": 1,
-		"lineWidth": 80,
 		"lineEnding": "crlf"
 	},
 	"javascript": {
@@ -43,8 +31,7 @@
 				"noDoubleEquals": "warn"
 			},
 			"style": {
-				"noNonNullAssertion": "off",
-				"useConst": "warn"
+				"noNonNullAssertion": "off"
 			}
 		}
 	}
