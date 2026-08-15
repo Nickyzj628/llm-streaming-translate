@@ -1,4 +1,4 @@
-import { extractErrorMessage, parseSSE } from "@nickyzj2023/utils";
+import { extractErrorMessage, fetcher, parseSSE } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import type { StreamTranslatePortMessage } from "@/types/messages";
 import { getStorage } from "@/utils/storage";
@@ -71,32 +71,16 @@ function buildSystemPrompt(
 		.join("\n");
 }
 
-/** 非 2xx 响应：尽量提取响应体里的 error.message，构造可读错误信息 */
-async function readHttpError(response: Response): Promise<string> {
-	const raw = await response.text().catch(() => "");
-	try {
-		const parsed = JSON.parse(raw) as { error?: { message?: unknown } };
-		if (typeof parsed.error?.message === "string") {
-			return `HTTP ${response.status}: ${parsed.error.message}`;
-		}
-	} catch {
-		// 响应体不是 JSON（如网关的 HTML 错误页）：走截断展示兜底
-	}
-	const detail = raw.trim().slice(0, 200);
-	return detail
-		? `HTTP ${response.status}: ${detail}`
-		: `HTTP ${response.status}`;
-}
-
 /**
  * 发起一次流式翻译，逐 chunk 经端口回传，返回可中止句柄。
  *
- * 为什么用原生 fetch + @nickyzj2023/utils 的 parseSSE 而不是该库的
+ * 为什么用 @nickyzj2023/utils 的 fetcher + parseSSE 而不是该库的
  * chatCompletions：当前版本（1.0.85/1.0.86）的 chatCompletions 不暴露
  * AbortSignal，流一旦开始就无法取消——content 端打断翻译（重新划词/页面卸载）
  * 后，background 只能把整个流跑完，白白消耗 API token、拖住 SW 生命周期。
- * 这里保留库里的 parseSSE 解析 SSE（维持"不是 OpenAI 官方 SDK"的约定），
- * 自己持有 AbortController，端口断开时立即硬中止 HTTP 连接。
+ * 这里用 fetcher 发 HTTP 请求（parser 透传 Response 以保留流式解析），配合
+ * 库里的 parseSSE 解析 SSE（维持"不是 OpenAI 官方 SDK"的约定），自己持有
+ * AbortController，端口断开时立即硬中止 HTTP 连接。
  */
 export function startStreamTranslation(
 	text: string,
@@ -155,27 +139,29 @@ export function startStreamTranslation(
 				},
 			];
 
-			const response = await fetch(
-				`${baseUrl.replace(/\/$/, "")}/chat/completions`,
+			// 用 @nickyzj2023/utils 的 fetcher 发请求（取代原生 fetch）。
+			// 关键点：fetcher 默认响应解析为 JSON，这里通过 parser 原样返回
+			// Response，从而保留下游 parseSSE 的流式解析能力；signal 会透传
+			// 到底层 fetch，所以 AbortController 的中止行为不变。
+			const response = await fetcher(
+				`${baseUrl.replace(/\/$/, "")}`,
+			).post<Response>(
+				"/chat/completions",
 				{
-					method: "POST",
+					model: modelName,
+					messages,
+					stream: true,
+					...customBody,
+				},
+				{
 					headers: {
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${apiKey}`,
 					},
-					body: JSON.stringify({
-						model: modelName,
-						messages,
-						stream: true,
-						...customBody,
-					}),
 					signal: controller.signal,
+					parser: (response): Promise<Response> => Promise.resolve(response),
 				},
 			);
-
-			if (!response.ok) {
-				throw new Error(await readHttpError(response));
-			}
 
 			for await (const data of parseSSE<StreamChunk>(response)) {
 				if (controller.signal.aborted) return;
