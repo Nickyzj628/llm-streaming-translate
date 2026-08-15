@@ -1,10 +1,10 @@
 /**
- * 划词翻译的端口客户端（content 端与 options 端共用）。
+ * 划词翻译的端口客户端（content 端使用）。
  *
- * 原来 content 端（content/index.ts）和 options 端（useTestTranslation.ts）
- * 各自重复实现了一段"端口生命周期"：connect port、监听 CHUNK/DONE/ERROR、
- * 超时、清理监听器、disconnect、异常断开兜底。这里收敛成一份，两端只负责
- * 各自的"写回差异"（onChunk 如何把译文写回、onDone/onError/onDisconnect 如何收尾）。
+ * 原来 content 端（content/index.ts）和 options 测试板块各自重复实现了一段
+ * "端口生命周期"：connect port、监听 CHUNK/DONE/ERROR、超时、清理监听器、
+ * disconnect、异常断开兜底。这里收敛成一份，消费方只负责"写回差异"
+ * （onChunk 如何把译文写回、onDone/onError/onDisconnect 如何收尾）。
  *
  * 消息协议见 types/messages.ts（START/CHUNK/DONE/ERROR），改动需两端同步。
  */
@@ -29,9 +29,9 @@ export interface StreamTranslateCallbacks {
 }
 
 export interface StreamTranslateOptions extends StreamTranslateCallbacks {
-	/** 发送给 background 的待翻译文本（content 端为分段协议文本，options 端为测试文本） */
+	/** 发送给 background 的待翻译文本（content 端为分段协议文本） */
 	text: string;
-	/** 网页元数据（content 端传入；options 测试板块不传） */
+	/** 网页元数据（content 端传入） */
 	pageMeta?: { title: string; description: string };
 	/** 超时毫秒：到达后自动断开并触发 onDisconnect。缺省不设超时 */
 	timeoutMs?: number;

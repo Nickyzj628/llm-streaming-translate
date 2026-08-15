@@ -8,7 +8,6 @@ import { useToast } from "../hooks/useToast";
 import { defaultStorage } from "../types/storage";
 import styles from "./App.module.css";
 import ImportExportPanel from "./components/ImportExportPanel";
-import TestPanel from "./components/TestPanel";
 import { useOptionsForm } from "./hooks/useOptionsForm";
 import { PRESETS } from "./utils/constants";
 import type { ImportableConfig } from "./utils/importExport";
@@ -240,7 +239,6 @@ const App: Component = () => {
 			</form>
 
 			{/* 非核心板块抽成独立组件，保持 App.tsx 只关心核心表单 */}
-			<TestPanel getBaseUrl={() => form.baseUrl} getModel={() => form.model} />
 			<ImportExportPanel onImport={handleImport} />
 		</div>
 	);

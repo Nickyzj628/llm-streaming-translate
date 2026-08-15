@@ -1,7 +1,7 @@
 /**
  * Options 页面专用常量。
  *
- * 与协议相关的常量（段分隔符 {{seg}}、占位符正则）统一放在 `@/utils/protocol.ts`，
+ * 与协议相关的常量（段分隔符 {{segN}}、占位符正则）统一放在 `@/utils/protocol.ts`，
  * 这里只放 options 页面自身的业务常量，避免与 content/background 共享的逻辑混淆。
  */
 
@@ -41,11 +41,3 @@ export const PRESETS: Preset[] = [
 		body: '{"chat_template_kwargs": {"enable_thinking": false}}',
 	},
 ];
-
-/**
- * 测试板块的默认文本节点。
- * 与 StreamTranslator.ts 的 system prompt 示例保持一致，覆盖两种协议形态
- *（整段翻译 / 含占位符的不翻译内容）。
- * 每个元素 = 一个文本节点（协议的一段，翻译时逐段写回）。
- */
-export const TEST_SAMPLE = ["The quick brown fox jumps over the lazy dog."];

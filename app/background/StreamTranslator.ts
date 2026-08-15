@@ -38,8 +38,7 @@ function safePostMessage(
 /**
  * 构造系统提示词。
  * 网页元数据（title/description）作为"网页背景"注入，帮助模型理解页面主题与语境，
- * 再明确翻译任务与段对齐协议。元数据为空时（如 options 测试板块）不注入该段，
- * 保持 prompt 简洁、后向兼容。
+ * 再明确翻译任务与段对齐协议。元数据为空时不注入该段，保持 prompt 简洁、后向兼容。
  */
 function buildSystemPrompt(
 	pageMeta: { title: string; description: string } | undefined,
@@ -54,19 +53,19 @@ function buildSystemPrompt(
 - 页面描述：${pageMeta.description || "（无）"}`,
 		`
 规则：
-- 用户输入的{{seg}}为分段标记，{{varN}}为变量标记，严禁翻译、改动或移动它们。
-- 即使残缺的段落（如单独一个"the"等无实际意义的单词）难以翻译，也要保留段落标记，**绝不能**丢弃任何标记。
+- 用户输入的{{segN}}为分段标记（N为段序号，从1递增，每段都以{{segN}}结尾），{{varN}}为变量标记，严禁翻译、改动或移动它们。
+- 即使残缺的段落（如单独一个"the"等无实际意义的单词）难以翻译，也要保留每段的{{segN}}标记，**绝不能**丢弃、合并任何标记或改变标记的序号。
 - 只输出译文，不要输出任何解释、提示或原文。`,
 		`
 示例1：
-输入："The quick brown fox jumps over the lazy dog."
-正确输出："敏捷的棕色狐狸跳过了懒狗。"
+输入："The quick brown fox jumps over the lazy dog.{{seg1}}"
+正确输出："敏捷的棕色狐狸跳过了懒狗。{{seg1}}"
 
 示例2：
-输入："The {{seg}}RegExp Engine{{seg}} can only be created by {{var1}}."
-错误输出："正则引擎{{seg}}只能被{{var1}}创建。"
-原因：丢失了一个{{seg}}标记，导致段落数对不上，严禁这样做！
-正确输出："{{seg}}正则引擎{{seg}}只能被{{var1}}创建。"`,
+输入："The {{seg1}}RegExp Engine{{seg2}} can only be created by {{var1}}.{{seg3}}"
+正确输出："这个{{seg1}}正则引擎{{seg2}}只能由{{var1}}创建。{{seg3}}"
+错误输出："这个{{seg1}}正则引擎{{seg2}}只能由{{var1}}创建。"
+原因：丢失了{{seg3}}标记，导致段落数对不上，严禁这样做！`,
 	]
 		.filter(Boolean)
 		.join("\n");

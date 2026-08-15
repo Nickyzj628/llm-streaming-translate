@@ -32,6 +32,13 @@ export interface TranslationController {
 	isTranslating: () => boolean;
 }
 
+/**
+ * 断点重试的最大次数。每次重试只重译"错位段及之后"的后半段，成本递减；
+ * 但模型可能在固定段反复错位造成死循环（每次重试仍消耗 API token），
+ * 所以设硬上限，达到上限后回滚原文（同 onError 行为）。可按需调大，但建议保留。
+ */
+const MAX_ATTEMPTS = 5;
+
 export function createTranslationController(): TranslationController {
 	// 会话状态：是否翻译中、当前翻译器（写回/打断/回滚对象）、当前流句柄（取消用）
 	let isTranslating = false;
@@ -97,33 +104,76 @@ export function createTranslationController(): TranslationController {
 			currentStream = null;
 		}
 
-		currentStream = streamTranslate({
-			text: segmentedText,
-			pageMeta: getPageMeta(),
-			// 回调闭包直接引用本次会话的 translator（而非模块级 currentTranslator）：
-			// 即使中途被新会话替换，旧会话的迟到回调也只会操作已销毁的旧对象，
-			// 不会把旧会话的 chunk 写进新会话的锚点
-			// 流式写回：translator 内部按段分隔拆解并写入对应锚点
-			onChunk: (chunk) => {
-				translator.appendChunk(chunk);
-			},
-			onDone: () => {
-				// finish() 内部做尽力对齐：尽量保留已译部分，缺失段补原文
-				translator.finish();
-				finish();
-			},
-			onError: (error) => {
-				console.error(error);
-				// 失败回滚：销毁翻译器，恢复原文 DOM
+		/**
+		 * 发起一次流式翻译（初始或错位重试共用）。
+		 * @param text 发给 LLM 的协议文本（初始为全文本，重试为后半段子文本）
+		 */
+		function runStream(text: string): void {
+			currentStream = streamTranslate({
+				text,
+				pageMeta: getPageMeta(),
+				onChunk: (chunk) => {
+					translator.appendChunk(chunk);
+				},
+				onDone: () => {
+					// finish 返回对齐结果：ok=true 段数对齐，直接收尾；
+					// ok=false 表示末尾吞段/漏段，由 handleMisalign 从 fromSegment 起续译。
+					// 注意不要在这里动 currentStream——handleMisalign 会 abort 旧流并
+					// runStream 建立新流，onDone 返回后不能再覆盖新句柄（本次重构修的 bug）。
+					const result = translator.finish();
+					if (result.ok) {
+						finish();
+					} else {
+						handleMisalign(result.fromSegment);
+					}
+				},
+				onError: (error) => {
+					console.error(error);
+					translator.destroy();
+					finish();
+				},
+				onDisconnect: () => {
+					translator.destroy();
+					finish();
+				},
+			});
+			// 注入对齐检测回调（translator 内部在发现错位时调用）
+			translator.setOnMisalign(handleMisalign);
+		}
+
+		/**
+		 * 已重试次数：0 = 首次请求。每次断点重试 +1；达到 MAX_ATTEMPTS 后放弃。
+		 * 保留计数是为了防死循环（模型在固定段反复错位会一直消耗 token）。
+		 */
+		let attempts = 0;
+
+		/**
+		 * 对齐检测回调（流式 {{segN}} 序号错配 + finish 段数兜底共用入口）：
+		 * 发现错位后从 fromSegment 起重译。restart 恢复错位段起锚点的原文并返回
+		 * 子文本；旧流立即中止，避免旧请求继续消耗 token。
+		 *
+		 * 为什么这是"自动断点重试"的核心：每次错位都精确定位到"第一个没对齐的段"，
+		 * 前半段已写回的译文不动，只重译后半段——长文多段时比全文重译省大量 token，
+		 * 且重试范围随 fromSegment 前进而收敛。
+		 */
+		function handleMisalign(fromSegment: number): void {
+			// 达到重试上限：放弃，回滚原文（同 onError 行为），避免反复错位死循环
+			if (attempts >= MAX_ATTEMPTS) {
+				currentStream?.abort();
+				currentStream = null;
 				translator.destroy();
 				finish();
-			},
-			onDisconnect: () => {
-				// 端口被异常断开（background 崩溃/被关闭）：回滚原文
-				translator.destroy();
-				finish();
-			},
-		});
+				return;
+			}
+			// 中止当前错位流，从定位到的错位段起重译后半段
+			currentStream?.abort();
+			currentStream = null;
+			attempts++;
+			runStream(translator.restart(fromSegment));
+		}
+
+		// 首次发起完整翻译
+		runStream(segmentedText);
 	}
 
 	return {
