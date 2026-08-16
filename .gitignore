@@ -27,3 +27,6 @@ pnpm-debug.log*
 # Environment
 .env
 .env.local
+
+# AI
+.reasonix

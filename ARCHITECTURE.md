@@ -15,40 +15,9 @@
 
 ## 2. 完整调用链（时序图）
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as 用户
-    participant C as content（页面脚本）
-    participant B as background（后台脚本）
-    participant LLM as AI 翻译接口
+![划词翻译调用链（时序图）](docs/diagrams/architecture-sequence.png)
 
-    Note over C: 页面侧（content）
-    U->>C: 划选文本<br/>监听 mouseup / selectionchange<br/>content/index.ts
-    C->>C: 弹出浮动翻译按钮<br/>show(x, y)<br/>content/FloatingButton.ts
-    U->>C: 点击翻译按钮<br/>onClick → controller.start(range)<br/>content/index.ts / TranslationController.ts
-    C->>C: 提取选区文本节点并包锚点<br/>createInlineTranslator(range)<br/>content/InlineTranslator.ts
-    C->>C: 生成待翻译文本（每段一个节点，<br/>每段后跟 {{segN}}、不译内容用 {{varN}} 占位）<br/>getText()<br/>content/InlineTranslator.ts
-    C->>B: 建立连接并发送文本<br/>runtime.connect("stream-translate") + START<br/>utils/streamTranslate.ts
-
-    Note over B: 后台侧（background）
-    B->>B: 接收 START，分派翻译<br/>onConnect → onStreamTranslatePort<br/>background/index.ts / PortListener.ts
-    B->>B: 读取已保存的设置<br/>getStorage()<br/>utils/storage.ts
-    B->>B: 校验 baseUrl / model / body<br/>StreamTranslator.ts
-    B->>LLM: 流式请求翻译<br/>fetch + parseSSE（AbortController，断开即中止）<br/>StreamTranslator.ts
-
-    loop 流式返回
-        LLM-->>B: 返回译文片段
-        B-->>C: 转发译文片段 CHUNK<br/>port.postMessage<br/>StreamTranslator.ts
-        C->>C: 按 {{segN}} 切分 + 序号校验，逐段写回锚点<br/>appendChunk()<br/>content/InlineTranslator.ts
-    end
-
-    LLM-->>B: 流结束
-    B-->>C: 发送完成通知 DONE<br/>StreamTranslator.ts
-    C->>C: 段数对齐校验 + 恢复原文结构<br/>finish()<br/>content/InlineTranslator.ts
-
-    Note over C: 若序号/段数错位：从错位段重译（断点重试，最多 MAX_ATTEMPTS 次）
-```
+> 图源：`docs/diagrams/architecture-sequence.html`（diagram-design 重绘，需要调整时改 HTML 后重新截图）
 
 **回传方向**：`CHUNK` 逐 chunk 沿端口回到 `streamTranslate.ts` 的 `messageHandler`，
 再触发 `onChunk` → `InlineTranslator.appendChunk` 写回。
