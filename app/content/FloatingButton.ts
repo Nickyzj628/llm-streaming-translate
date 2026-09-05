@@ -36,7 +36,10 @@ function generateSquirclePath(size: number, n: number): string {
 }
 
 function ensureClipPath(): void {
-	if (document.getElementById("llm-squircle")) return;
+	// clipPath 挂在我们的 shadow root 内，document.getElementById 穿不透 shadow DOM，
+	// 全局查永远查不到 → 每次 show() 都重复注入一个隐藏 svg（旧代码的累积 bug）。
+	// 改为在挂载点内查找，命中即复用。
+	if (currentParent.querySelector("#llm-squircle")) return;
 
 	const svgNS = "http://www.w3.org/2000/svg";
 	const svg = document.createElementNS(svgNS, "svg");

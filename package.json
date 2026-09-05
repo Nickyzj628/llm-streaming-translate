@@ -1,6 +1,6 @@
 {
 	"name": "llm-streaming-translator",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -16,19 +16,19 @@
 		"zip:source": "7z a .addfox/extension/source.zip . -xr!node_modules -xr!.addfox -xr!dist -xr!*.zip -xr!.git -uq0"
 	},
 	"dependencies": {
-		"@addfox/utils": "^0.2.5",
-		"@nickyzj2023/utils": "^1.0.86",
-		"solid-js": "^1.9.14",
+		"@addfox/utils": "^0.2.6",
+		"@nickyzj2023/utils": "^1.0.94",
+		"solid-js": "^1.9.15",
 		"webextension-polyfill": "^0.12.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.8",
-		"@rsbuild/plugin-babel": "^2.0.1",
+		"@biomejs/biome": "^2.5.12",
+		"@rsbuild/plugin-babel": "^2.1.0",
 		"@rsbuild/plugin-solid": "^1.2.2",
-		"@types/chrome": "^0.2.6",
-		"@types/node": "^26.2.0",
-		"@types/webextension-polyfill": "^0.12.5",
-		"addfox": "^0.2.6",
+		"@types/chrome": "^0.2.8",
+		"@types/node": "^26.4.1",
+		"@types/webextension-polyfill": "^0.12.6",
+		"addfox": "^0.2.9",
 		"typescript": "^7.0.2"
 	}
 }

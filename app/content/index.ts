@@ -1,4 +1,3 @@
-import { defineShadowContentUI } from "@addfox/utils";
 import {
 	hide as hideButton,
 	isButtonElement,
@@ -20,12 +19,26 @@ import { createTranslationController } from "@/content/TranslationController";
  * - InlineTranslator：协议文本构造与 DOM 写回；
  * - FloatingButton：浮动按钮的纯 UI。
  */
-const mountUI = defineShadowContentUI({
-	name: "llm-translate-ui",
-	target: document.body,
-	injectMode: "append",
-});
-const shadowRoot = mountUI() as ShadowRoot;
+
+/**
+ * 零 realm 污染的 Shadow DOM 挂载：普通 <div> 当 host，不注册自定义元素。
+ *
+ * 为什么不用 @addfox/utils 的 defineShadowContentUI：它会把内容脚本 realm 的
+ * 自定义元素类注册进页面共享的 customElements（Firefox 内容脚本与页面共享该
+ * 注册表），升级后的 host 原型链混入扩展对象；页面脚本（如 Cloudflare Turnstile
+ * 初始化时遍历 DOM）一碰到它就触发 Firefox Xray 拦截，抛
+ * "Permission denied to access property" 导致校验组件无法渲染。
+ * 普通 div 的原型链完全属于页面 realm，页面怎么读 tagName 都不会越权。
+ */
+function mountShadowUI(): ShadowRoot {
+	const host = document.createElement("div");
+	host.dataset.llmTranslateHost = "true";
+	const shadowRoot = host.attachShadow({ mode: "open" });
+	document.body.appendChild(host);
+	return shadowRoot;
+}
+
+const shadowRoot = mountShadowUI();
 setParent(shadowRoot);
 
 const controller = createTranslationController();
