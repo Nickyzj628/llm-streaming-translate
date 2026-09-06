@@ -4,3 +4,6 @@ allowBuilds:
   spawn-sync: true
 minimumReleaseAgeExclude:
   - "@nickyzj2023/*"
+overrides:
+  '@nickyzj2023/ai': link:../ai
+  '@nickyzj2023/utils': link:../utils

@@ -4,6 +4,10 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@nickyzj2023/ai': link:../ai
+  '@nickyzj2023/utils': link:../utils
+
 importers:
 
   .:
@@ -12,8 +16,8 @@ importers:
         specifier: ^0.2.6
         version: 0.2.6
       '@nickyzj2023/utils':
-        specifier: ^1.0.94
-        version: 1.0.94
+        specifier: link:../utils
+        version: link:../utils
       solid-js:
         specifier: ^1.9.15
         version: 1.9.15
@@ -359,9 +363,6 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
-
-  '@nickyzj2023/utils@1.0.94':
-    resolution: {integrity: sha512-keFF9R+6Qza8VmGml/9GNXEnihGT84zMXHSHeVGGoAsd9MlM3y7c+fsHGybz/xzdC3tePgZ2kBqtytTPNFZYHw==}
 
   '@rsbuild/core@2.2.1':
     resolution: {integrity: sha512-JcGtG4bo7PBihj6fBL6gaxaJihqLf7nGWW/t4zEmXpMJkV6XNdr1jAo9B0xI4mLAOmtFeva8cUbn9SE2ZEmAIw==}
@@ -1355,8 +1356,6 @@ snapshots:
       '@emnapi/runtime': 1.11.3
       '@tybys/wasm-util': 0.10.3
     optional: true
-
-  '@nickyzj2023/utils@1.0.94': {}
 
   '@rsbuild/core@2.2.1':
     dependencies:

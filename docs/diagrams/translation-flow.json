@@ -1,0 +1,203 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "划词翻译流程（开发者视角）",
+    "locale": "zh-CN",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    {
+      "id": "content",
+      "label": "content（页面脚本）"
+    },
+    {
+      "id": "background",
+      "label": "background（service worker）"
+    },
+    {
+      "id": "llm",
+      "label": "LLM 端点（OpenAI 兼容）"
+    }
+  ],
+  "phases": [
+    {
+      "id": "phase-prep",
+      "label": "选词与分段",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "phase-req",
+      "label": "长连接流式请求",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "phase-stream",
+      "label": "流式回传与写回",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "sel",
+    "extract",
+    "start",
+    "prep",
+    "call",
+    "llm",
+    "relay",
+    "write"
+  ],
+  "nodes": [
+    {
+      "id": "sel",
+      "lane": "content",
+      "col": 0,
+      "type": "frontend",
+      "label": "划词显示按钮",
+      "sublabel": "选区非空即弹出",
+      "width": 100
+    },
+    {
+      "id": "extract",
+      "lane": "content",
+      "col": 1,
+      "type": "frontend",
+      "label": "分段与锚点",
+      "sublabel": "每文本节点一段，pre/code 整段",
+      "tag": "{{segN}}/{{varN}} 协议",
+      "width": 124
+    },
+    {
+      "id": "start",
+      "lane": "content",
+      "col": 2,
+      "type": "frontend",
+      "label": "长连接发 START",
+      "sublabel": "发送 START{text, pageMeta}",
+      "width": 118
+    },
+    {
+      "id": "prep",
+      "lane": "background",
+      "col": 3,
+      "type": "backend",
+      "label": "校验并构造请求",
+      "sublabel": "读配置，prompt 注入页面语境",
+      "width": 122
+    },
+    {
+      "id": "call",
+      "lane": "background",
+      "col": 4,
+      "type": "backend",
+      "label": "流式调用 LLM",
+      "sublabel": "POST /chat/completions stream:true",
+      "tag": "fetch + parseSSE",
+      "width": 132
+    },
+    {
+      "id": "llm",
+      "lane": "llm",
+      "col": 4,
+      "type": "cloud",
+      "label": "LLM 端点",
+      "sublabel": "SSE 增量 delta.content",
+      "width": 104
+    },
+    {
+      "id": "relay",
+      "lane": "background",
+      "col": 5,
+      "type": "backend",
+      "label": "逐帧回传 CHUNK",
+      "sublabel": "for-await 解析逐帧回传",
+      "width": 108
+    },
+    {
+      "id": "write",
+      "lane": "content",
+      "col": 5,
+      "type": "frontend",
+      "label": "解析写回与收尾",
+      "sublabel": "{{segN}} 校验写回，DONE 后 unwrap",
+      "tag": "SegmentStreamParser",
+      "width": 128
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-click",
+      "from": "sel",
+      "to": "extract",
+      "label": "点击浮动按钮"
+    },
+    {
+      "id": "e-text",
+      "from": "extract",
+      "to": "start"
+    },
+    {
+      "id": "e-start",
+      "from": "start",
+      "to": "prep",
+      "label": "START{text, pageMeta}",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-prep",
+      "from": "prep",
+      "to": "call"
+    },
+    {
+      "id": "e-request",
+      "from": "call",
+      "to": "llm",
+      "label": "POST /chat/completions（stream:true）"
+    },
+    {
+      "id": "e-stream",
+      "from": "llm",
+      "to": "relay",
+      "label": "SSE delta.content",
+      "variant": "dashed",
+      "role": "async"
+    },
+    {
+      "id": "e-chunk",
+      "from": "relay",
+      "to": "write",
+      "label": "CHUNK",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e-retry",
+      "from": "write",
+      "to": "start",
+      "label": "错位/吞段 → restart 重译后半段",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "段对齐协议（核心约定）",
+      "items": [
+        "每个文本节点 = 一段，段间用带绝对序号的 {{segN}} 分隔（含最后一段）；不译内容与 pre/code 整块替换为 {{varN}} 占位",
+        "构造与解析共用 utils/protocol.ts，content 写回与 prompt 改动必须两端同步，否则译文错位"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "中止与恢复",
+      "items": [
+        "端口断开（打断翻译/页面卸载）→ background 立即 abort() 中止 HTTP 流，避免空耗 token",
+        "错位重试上限 5 次，只重译错位段之后的后半段；超限或出错 → 恢复锚点原文（回滚）"
+      ]
+    }
+  ]
+}

@@ -13,11 +13,13 @@
 译文写回对应的锚点 span，实现原地流式替换。若模型发生拆/并段错位，还能**精确定位
 错位段并从该段起重译（断点重试）**，而不是全文重译。
 
-## 2. 完整调用链（时序图）
+## 2. 完整调用链（流程图）
 
-![划词翻译调用链（时序图）](docs/diagrams/architecture-sequence.png)
-
-> 图源：`docs/diagrams/architecture-sequence.html`（diagram-design 重绘，需要调整时改 HTML 后重新截图）
+> 交互式流程图：打开 [docs/diagrams/translation-flow.html](docs/diagrams/translation-flow.html)
+> （archify 生成，支持主题切换/缩放/聚焦，含断点重试分支与协议要点卡片）
+>
+> 图源：`docs/diagrams/translation-flow.json`（archify 规格；改动后运行
+> `archify.mjs deliver workflow` 重新生成 HTML，勿手改 HTML）
 
 **回传方向**：`CHUNK` 逐 chunk 沿端口回到 `streamTranslate.ts` 的 `messageHandler`，
 再触发 `onChunk` → `InlineTranslator.appendChunk` 写回。
