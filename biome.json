@@ -6,7 +6,13 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"includes": ["addfox.config.ts", "app/**/*.ts", "app/**/*.tsx"]
+		"includes": [
+			"addfox.config.ts",
+			"rstest.config.ts",
+			"app/**/*.ts",
+			"app/**/*.tsx",
+			"__tests__/**/*.ts"
+		]
 	},
 	"formatter": {
 		"useEditorconfig": false,

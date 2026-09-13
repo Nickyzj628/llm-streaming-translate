@@ -14,19 +14,45 @@
  * 序号让"第 i 个输出段结束于 {{segi}}"成为每段都有的地标，content 端据此精确
  * 定位错位段并只重译后半段（断点重试），详见 InlineTranslator.ts 的注释。
  *
- * 本模块由 content 端（InlineTranslator.ts）写回使用（options 测试板块已移除）。
+ * 本模块由 content 端（InlineTranslator.ts）写回使用。
  */
-
-/** 占位符：匹配不译内容留下的 {{varN}} 标记（N 为不译片段编号，全局递增） */
-export const PLACEHOLDER_RE = /\{\{var\d+\}\}/g;
 
 /**
- * 生成带序号的段分隔标记 {{segN}}（N 为绝对段序号，从 1 递增）。
- * content 端（InlineTranslator.ts）构造输入与解析输出必须一致，
- * 是"段数对齐"协议的核心标记，改动必须与 content 端同步（见 AGENTS.md 的"最容易踩的坑"）。
+ * 协议标记的形态（{{segN}} / {{varN}}）。这里是标记形态的唯一来源：
+ * 拼接函数、prompt 说明（app/background/prompt.ts）都由它派生，改形态只动这三行。
+ * 仅"字符级截断前缀"正则（INCOMPLETE_PROTOCOL_TAIL_RE）与拆段正则与字面字符强耦合，
+ * 需一并手改。
+ */
+const MARKER_PREFIX = "{{";
+const MARKER_SUFFIX = "}}";
+/** 段分隔标记名：{{segN}} 的 seg */
+export const SEGMENT_MARKER = "seg";
+/** 占位符标记名：{{varN}} 的 var */
+export const PLACEHOLDER_MARKER = "var";
+
+/** 段分隔标记的说明形态 {{segN}}（N 为待填序号的占位）：prompt 说明用 */
+export const SEGMENT_MARKER_LABEL = `${MARKER_PREFIX}${SEGMENT_MARKER}N${MARKER_SUFFIX}`;
+/** 占位符的说明形态 {{varN}}：prompt 说明用 */
+export const PLACEHOLDER_MARKER_LABEL = `${MARKER_PREFIX}${PLACEHOLDER_MARKER}N${MARKER_SUFFIX}`;
+
+/** 占位符：匹配不译内容留下的 {{varN}} 标记（N 为不译片段编号，全局递增） */
+const PLACEHOLDER_RE = /\{\{var\d+\}\}/g;
+
+/**
+ * 生成带序号的段分隔标记（如 {{seg1}}，N 为绝对段序号，从 1 递增）。
+ * content 端（InlineTranslator.ts）构造输入、background 解析输出与 prompt 示例共用，
+ * 是"段数对齐"协议的核心标记。
  */
 export function segmentSeparator(segmentNumber: number): string {
-	return `{{seg${segmentNumber}}}`;
+	return `${MARKER_PREFIX}${SEGMENT_MARKER}${segmentNumber}${MARKER_SUFFIX}`;
+}
+
+/**
+ * 生成带序号的占位符（如 {{var1}}，N 为不译片段编号，全局递增）。
+ * content 端（InlineTranslator.ts）构造协议行与 prompt 示例共用。
+ */
+export function placeholderMarker(index: number): string {
+	return `${MARKER_PREFIX}${PLACEHOLDER_MARKER}${index}${MARKER_SUFFIX}`;
 }
 
 /**
@@ -60,7 +86,7 @@ export function joinSegmentRows(rows: string[], startIndex = 0): string {
 const INCOMPLETE_PROTOCOL_TAIL_RE =
 	/\{\{(?:s(?:e(?:g\d*)?)?|v(?:a(?:r\d*)?)?)?$/u;
 
-export function stripIncompleteSegmentPrefix(text: string): string {
+function stripIncompleteSegmentPrefix(text: string): string {
 	const match = text.match(INCOMPLETE_PROTOCOL_TAIL_RE);
 	return match ? text.slice(0, -match[0].length) : text;
 }
@@ -94,12 +120,11 @@ export interface SegmentStreamSink {
 }
 
 /**
- * 共享的段流解析器：把"可能被任意切分的译文 chunk 流"增量解析成
- * "完整段 + 未完成尾段"回调，规则与 content 端写回、options 端测试显示完全一致。
+ * 段流解析器：把"可能被任意切分的译文 chunk 流"增量解析成
+ * "完整段 + 未完成尾段"回调，规则与 content 端写回完全一致。
  *
  * 为什么收敛在这里：段对齐协议（{{segN}} 拆分 / 未完成前缀剥离 / 空段对齐）是
- * 最容易写漂的逻辑（AGENTS.md"最容易踩的坑"）。以前 InlineTranslator 与
- * options 测试板块各写一份 buffer 拆分循环，现在统一由本类保证行为一致，
+ * 最容易写漂的逻辑（AGENTS.md"最容易踩的坑"）。由本类作为唯一实现保证行为一致，
  * 消费方只负责"把段写回自己的目标"（DOM 锚点）。
  */
 export class SegmentStreamParser {

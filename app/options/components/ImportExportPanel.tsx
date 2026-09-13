@@ -6,10 +6,10 @@
  * 导入成功后通过 onImport 回调把配置回填到 App 层的表单 store。
  */
 import type { Component } from "solid-js";
-import Button from "../../components/Button/Button";
-import { useToast } from "../../hooks/useToast";
+import { useToast } from "../hooks/useToast";
 import type { ImportableConfig } from "../utils/importExport";
 import { exportConfig, importConfig } from "../utils/importExport";
+import Button from "./Button/Button";
 import styles from "./ImportExportPanel.module.css";
 
 interface ImportExportPanelProps {

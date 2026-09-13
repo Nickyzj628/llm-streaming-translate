@@ -15,6 +15,9 @@ importers:
       '@addfox/utils':
         specifier: ^0.2.6
         version: 0.2.6
+      '@nickyzj2023/ai':
+        specifier: link:../ai
+        version: link:../ai
       '@nickyzj2023/utils':
         specifier: link:../utils
         version: link:../utils
@@ -30,10 +33,13 @@ importers:
         version: 2.5.12
       '@rsbuild/plugin-babel':
         specifier: ^2.1.0
-        version: 2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)
+        version: 2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)
       '@rsbuild/plugin-solid':
         specifier: ^1.2.2
-        version: 1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(solid-js@1.9.15)(supports-color@7.2.0)
+        version: 1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.15)(supports-color@7.2.0)
+      '@rstest/core':
+        specifier: ^0.11.12
+        version: 0.11.12
       '@types/chrome':
         specifier: ^0.2.8
         version: 0.2.8
@@ -45,7 +51,7 @@ importers:
         version: 0.12.6
       addfox:
         specifier: ^0.2.9
-        version: 0.2.9(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)
+        version: 0.2.9(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -364,8 +370,8 @@ packages:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
 
-  '@rsbuild/core@2.2.1':
-    resolution: {integrity: sha512-JcGtG4bo7PBihj6fBL6gaxaJihqLf7nGWW/t4zEmXpMJkV6XNdr1jAo9B0xI4mLAOmtFeva8cUbn9SE2ZEmAIw==}
+  '@rsbuild/core@2.2.5':
+    resolution: {integrity: sha512-nf34ri1iZduYhHUr5Vc79L7Eml+IlN0nFIaF/g3OW4WR/gShxuf5wVXS69/H8FTHJYN4SdYlNcefSZQluEMKgA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
     peerDependencies:
@@ -419,13 +425,29 @@ packages:
     cpu: [arm64]
     os: [darwin]
 
+  '@rspack/binding-darwin-arm64@2.2.3':
+    resolution: {integrity: sha512-MGLx4lMTY6XEtJi55S+fk83+683GeUDuoqzjixbq6ehHdr/l6nGiHhgvMtV5DYt9sCytUDzyrCkcJ0AWqJxnTA==}
+    cpu: [arm64]
+    os: [darwin]
+
   '@rspack/binding-darwin-x64@2.2.1':
     resolution: {integrity: sha512-rTIG/xZIW7RbEEuMR9hnNn5dv3fDBpX0N4FAQUwfhUYy3tN2+3vibTTq/Nj1Sd9Vn4yWydbWIEwBX6m/aGejig==}
     cpu: [x64]
     os: [darwin]
 
+  '@rspack/binding-darwin-x64@2.2.3':
+    resolution: {integrity: sha512-5B/c1YTYEz9m7TyqtGQgTmXMr9PoPewyqsyHB4N0AB7nxDhtgmki0GniP2Lqtx3LJzOvQMjwet+I2lmWxvxwCg==}
+    cpu: [x64]
+    os: [darwin]
+
   '@rspack/binding-linux-arm64-gnu@2.2.1':
     resolution: {integrity: sha512-53rAMU6Hqiat21IMU1hTt4Si2F33h+ZbXOt+Y18W39AFjcwmleIBId2u7beqJeGXLJuBgIAm31jcbJj/PN7mWQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rspack/binding-linux-arm64-gnu@2.2.3':
+    resolution: {integrity: sha512-sU+jPGD2xz3BxFvsdBQVGce538YHqrSKMB4ZSfKhj6RSKjeGzpJ1BVl8+IndiQsfTgaUxi7N+r5cs/ezGy1TVQ==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
@@ -436,8 +458,20 @@ packages:
     os: [linux]
     libc: [musl]
 
+  '@rspack/binding-linux-arm64-musl@2.2.3':
+    resolution: {integrity: sha512-EQuADbqWbVgNAh5ep/u/B7Z/8UUkZjMLzHAOKZJklBpe4Y8mnhFNjieX0xc9NadR+drj9tqmEANxzTOkFtVPyQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
   '@rspack/binding-linux-ppc64-gnu@2.2.1':
     resolution: {integrity: sha512-pvx1oeg1z7cr8OcNt7PAt1SJTHzdsN/pvu7HkGnfks2fWE7GDs9DLL2KvN7tUkzQvJm6bGgUwqSCOrqV4uSwAg==}
+    cpu: [ppc64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rspack/binding-linux-ppc64-gnu@2.2.3':
+    resolution: {integrity: sha512-kyXROzr519a5juBII9ysuc5ZD2apEZ0DJqL5PPCAOVHjzMfThEIBwnX3gicNCmp+kY0CCIOl2LagwbtFaOzoiA==}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
@@ -448,8 +482,20 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rspack/binding-linux-riscv64-gnu@2.2.3':
+    resolution: {integrity: sha512-F3x6Nu0RUSoLtiaMse3hYQ3Nf5A2de6vTWWDXj14Ll6BpGWXGn+U/eXT/nB199fFnDEYf+CJEa7d6fzcYdwdjA==}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [glibc]
+
   '@rspack/binding-linux-riscv64-musl@2.2.1':
     resolution: {integrity: sha512-GEFUFHQkjKU7OYyHXnrIo8wWcUHM7jeKov5z6Lxd3i+3hKo11yBOgb7b+uD94Rx2tPuWF4jyFdWmcNu46Njb/A==}
+    cpu: [riscv64]
+    os: [linux]
+    libc: [musl]
+
+  '@rspack/binding-linux-riscv64-musl@2.2.3':
+    resolution: {integrity: sha512-O3HK7OnPvoBxZu4MX2j+t3gk4qiUsFYqj/29L3WgU1iQsdUSIN6PInW2JvbiLqyuzt09VltIEXTKayY8EysCpQ==}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
@@ -460,8 +506,20 @@ packages:
     os: [linux]
     libc: [glibc]
 
+  '@rspack/binding-linux-s390x-gnu@2.2.3':
+    resolution: {integrity: sha512-SIxfGdwBdAjwJ8pDlPTb8MPIZIv/i2lKHn4/ywuDpFOxlUA4Bo/OKqQOenHx2MFD2mN8jigBZQTF0KVe5YP1uQ==}
+    cpu: [s390x]
+    os: [linux]
+    libc: [glibc]
+
   '@rspack/binding-linux-x64-gnu@2.2.1':
     resolution: {integrity: sha512-QX+gRxg2CS9ri2fUG5eNurdsrOCWoJ56SsD2O7kcVGiRm+S2+muNb/QhkdkAdt/u/m++7Ve5TMIpHTnaKYCpCw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@rspack/binding-linux-x64-gnu@2.2.3':
+    resolution: {integrity: sha512-IzQGcw09WYn/IzwB1SQpg7FQ211MBr+fJB2/WoRrPS6CNdtlkDHZaI8z2oq+2Oc5Su21jgX75VlWFajirUx5Dw==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
@@ -472,12 +530,27 @@ packages:
     os: [linux]
     libc: [musl]
 
+  '@rspack/binding-linux-x64-musl@2.2.3':
+    resolution: {integrity: sha512-9OKSx2ickrR+PFal94XE6Hkj49AQ2HI3KuR9XeRkKOwSxjwrskV/Pn1wc2itDOHkm/QHP7k+MttsYb4FGuNIqw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
   '@rspack/binding-wasm32-wasi@2.2.1':
     resolution: {integrity: sha512-/d2ImKDS+lT+FJ07MxKBeUkTat84tr2Nm2+nIRt8HmZK7/N8odkQml9vb4MHr8E7oYOp4B+jm6W5frdRzKrkJQ==}
     cpu: [wasm32]
 
+  '@rspack/binding-wasm32-wasi@2.2.3':
+    resolution: {integrity: sha512-gici3jWJi0GDy9kbYh57LoA57H8A2EAD9cV2jFKp1YoJ2aX2U9lANh4L+xoKPTvVQYpRvleoA5jkAvyfeLQ5bw==}
+    cpu: [wasm32]
+
   '@rspack/binding-win32-arm64-msvc@2.2.1':
     resolution: {integrity: sha512-TfmaKPF3KC7uoZb6A+8ZUbLS8g8P5EdeXFGLCaJ+UgdkJ20TsapcfJXZXWNnKzFEkV8dUO/t5oNxNLYy2URusw==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rspack/binding-win32-arm64-msvc@2.2.3':
+    resolution: {integrity: sha512-1MG66kcuqAGFs9ewiBc+/NJSTQr1jHrkZ2nCVMyhukl1o8embmFZa3BCibYgBYs5P7FRc6Sa+CDXcrfDZOLInQ==}
     cpu: [arm64]
     os: [win32]
 
@@ -486,13 +559,26 @@ packages:
     cpu: [ia32]
     os: [win32]
 
+  '@rspack/binding-win32-ia32-msvc@2.2.3':
+    resolution: {integrity: sha512-CAigxxh9DYJmEwH9f6FRkSsmt0GhKVqKaFRVFFrF9WDL7gXP3hyE/h/cCeMdmlTzRt8Mht87AvnDX7PG3neMrA==}
+    cpu: [ia32]
+    os: [win32]
+
   '@rspack/binding-win32-x64-msvc@2.2.1':
     resolution: {integrity: sha512-l3K4s7nrQJc+3LacPFjZGjX8Jk1sf8Q4TK6IXAsdSucOjTqYSpD8PMl2NUXCBDXOl8T2V4v323z1LfxwW8BPmA==}
     cpu: [x64]
     os: [win32]
 
+  '@rspack/binding-win32-x64-msvc@2.2.3':
+    resolution: {integrity: sha512-qa5Wc34a+Uux5foZ1Z+9fPQceVRbgTunaIulHezVF/ZxvqKO4DkAC7tFl53shB0YRVBAPg8R78MGd8cByfoxLQ==}
+    cpu: [x64]
+    os: [win32]
+
   '@rspack/binding@2.2.1':
     resolution: {integrity: sha512-56TqztuEMd+aHGv1jDXnkJQGSLTb4NoO146flFxJqPG8931UdXPO2pNR9M0Q2Pz+GvmO0fLHGPLYBHoRVrRlHw==}
+
+  '@rspack/binding@2.2.3':
+    resolution: {integrity: sha512-532+T5N6yIdukChiL85H4NFN2vn9oi8wlLa1ByPNtpNYriE9s24fUhn0RiK7w/xACqnNpYmXCqLYCvjOzyCy+w==}
 
   '@rspack/core@2.2.1':
     resolution: {integrity: sha512-EHFX2oWCY1HkHJkG/Ev8HXCcl4gQzgETyairdIlBkKaypuW8i7kowBxUFzpHHg/ObF70vB3focToel9Wwg4MRA==}
@@ -506,8 +592,33 @@ packages:
       '@swc/helpers':
         optional: true
 
+  '@rspack/core@2.2.3':
+    resolution: {integrity: sha512-VHejw+PDd5B5v6VduFyjLSTIFaHBMNGPMKw+Y0zjkMqjYhDD1hjLOBC5frRKjTWcfYdk+Q73auWPp9k/H9PfIQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    peerDependencies:
+      '@module-federation/runtime-tools': ^0.24.1 || ^2.0.0
+      '@swc/helpers': ^0.5.23
+    peerDependenciesMeta:
+      '@module-federation/runtime-tools':
+        optional: true
+      '@swc/helpers':
+        optional: true
+
   '@rspack/lite-tapable@1.1.5':
     resolution: {integrity: sha512-uzB782zJbFTM3ta+e2Glikx36dca/6Y+DXyvFN+wb0Tx5ItIW+g03A0t3amP3LGzPHSkb0k81VHCm4jxLQwfag==}
+
+  '@rstest/core@0.11.12':
+    resolution: {integrity: sha512-dklEYLtL1eip/11K+o3xEchEs2nCGua2u2W8Pycf6PS8TE0PDJH2Bn9y/txuQI4YVHyIQ88PISWtS6fVnxSyXQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      happy-dom: ^20.8.3
+      jsdom: '>=15.0.0'
+    peerDependenciesMeta:
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
@@ -527,8 +638,14 @@ packages:
   '@types/babel__traverse@7.28.0':
     resolution: {integrity: sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==}
 
+  '@types/chai@5.2.3':
+    resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
+
   '@types/chrome@0.2.8':
     resolution: {integrity: sha512-dznDYMiJUyuc7b+78PxnWhaGOonmbX/OmcWu7NE42sg/yTLJMYnJ7Uah40SLPNFiCh8reqcthk7vOva2+MSvzw==}
+
+  '@types/deep-eql@4.0.2':
+    resolution: {integrity: sha512-c9h9dVVMigMPc4bwTvC5dxqtqJZwQPePsWjPlpSOnojbor6pGqdk541lfA7AqFQr5pB1BRdq0juY9db81BwyFw==}
 
   '@types/filesystem@0.0.36':
     resolution: {integrity: sha512-vPDXOZuannb9FZdxgHnqSwAG/jvdGM8Wq+6N4D/d80z+D4HWH+bItqsZaVRQykAn6WEVeEkLm2oQigyHtgb0RA==}
@@ -720,6 +837,10 @@ packages:
   ansi-styles@4.3.0:
     resolution: {integrity: sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg==}
     engines: {node: '>=8'}
+
+  assertion-error@2.0.1:
+    resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
+    engines: {node: '>=12'}
 
   babel-loader@10.1.1:
     resolution: {integrity: sha512-JwKSzk2kjIe7mgPK+/lyZ2QAaJcpahNAdM+hgR2HI8D0OJVkdj8Rl6J3kaLYki9pwF7P2iWnD8qVv80Lq1ABtg==}
@@ -987,17 +1108,16 @@ packages:
 
 snapshots:
 
-  '@addfox/cli@0.2.9(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)':
+  '@addfox/cli@0.2.9(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)':
     dependencies:
       '@addfox/common': 0.2.6
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
+      '@addfox/core': 0.2.8
       '@addfox/pkg-manager': 0.2.5
-      '@addfox/rsbuild-plugin-extension-entry': 0.2.9(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))
-      '@addfox/rsbuild-plugin-extension-hmr': 0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))
-      '@addfox/rsbuild-plugin-extension-manifest': 0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))
-      '@addfox/rsbuild-plugin-extension-monitor': 0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))
-      '@addfox/rsbuild-plugin-vue': 0.2.6(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)
-      '@rsbuild/core': 2.2.1
+      '@addfox/rsbuild-plugin-extension-entry': 0.2.9(@rspack/core@2.2.1(@swc/helpers@0.5.23))
+      '@addfox/rsbuild-plugin-extension-hmr': 0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))
+      '@addfox/rsbuild-plugin-extension-manifest': 0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))
+      '@addfox/rsbuild-plugin-extension-monitor': 0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))
+      '@addfox/rsbuild-plugin-vue': 0.2.6(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
       create-addfox-app: 0.2.8
     transitivePeerDependencies:
@@ -1013,28 +1133,25 @@ snapshots:
 
   '@addfox/common@0.2.6': {}
 
-  '@addfox/core@0.2.8(@rsbuild/core@2.2.1)':
+  '@addfox/core@0.2.8':
     dependencies:
       '@addfox/common': 0.2.6
-      '@rsbuild/core': 2.2.1
       jiti: 2.7.0
 
   '@addfox/launcher@0.2.8': {}
 
   '@addfox/pkg-manager@0.2.5': {}
 
-  '@addfox/rsbuild-plugin-extension-entry@0.2.9(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
+  '@addfox/rsbuild-plugin-extension-entry@0.2.9(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
     dependencies:
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
-      '@rsbuild/core': 2.2.1
+      '@addfox/core': 0.2.8
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
 
-  '@addfox/rsbuild-plugin-extension-hmr@0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
+  '@addfox/rsbuild-plugin-extension-hmr@0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
     dependencies:
       '@addfox/common': 0.2.6
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
+      '@addfox/core': 0.2.8
       '@addfox/launcher': 0.2.8
-      '@rsbuild/core': 2.2.1
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
     optionalDependencies:
       ws: 8.21.3
@@ -1042,25 +1159,22 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@addfox/rsbuild-plugin-extension-manifest@0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
+  '@addfox/rsbuild-plugin-extension-manifest@0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
     dependencies:
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
-      '@rsbuild/core': 2.2.1
+      '@addfox/core': 0.2.8
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
 
-  '@addfox/rsbuild-plugin-extension-monitor@0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
+  '@addfox/rsbuild-plugin-extension-monitor@0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))':
     dependencies:
       '@addfox/common': 0.2.6
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
-      '@rsbuild/core': 2.2.1
+      '@addfox/core': 0.2.8
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
 
-  '@addfox/rsbuild-plugin-vue@0.2.6(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)':
+  '@addfox/rsbuild-plugin-vue@0.2.6(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)':
     dependencies:
-      '@rsbuild/core': 2.2.1
-      '@rsbuild/plugin-babel': 2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)
-      '@rsbuild/plugin-vue': 2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)
-      '@rsbuild/plugin-vue-jsx': 2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0)
+      '@rsbuild/plugin-babel': 2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)
+      '@rsbuild/plugin-vue': 2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)
+      '@rsbuild/plugin-vue-jsx': 2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
       '@vue/compiler-sfc': 3.5.34
 
@@ -1357,14 +1471,14 @@ snapshots:
       '@tybys/wasm-util': 0.10.3
     optional: true
 
-  '@rsbuild/core@2.2.1':
+  '@rsbuild/core@2.2.5':
     dependencies:
-      '@rspack/core': 2.2.1(@swc/helpers@0.5.23)
+      '@rspack/core': 2.2.3(@swc/helpers@0.5.23)
       '@swc/helpers': 0.5.23
     transitivePeerDependencies:
       - '@module-federation/runtime-tools'
 
-  '@rsbuild/plugin-babel@1.2.1(@rsbuild/core@2.2.1)(supports-color@7.2.0)':
+  '@rsbuild/plugin-babel@1.2.1(supports-color@7.2.0)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
@@ -1372,12 +1486,10 @@ snapshots:
       '@babel/preset-typescript': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       '@types/babel__core': 7.20.5
       reduce-configs: 1.1.2
-    optionalDependencies:
-      '@rsbuild/core': 2.2.1
     transitivePeerDependencies:
       - supports-color
 
-  '@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)':
+  '@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0)':
     dependencies:
       '@babel/core': 7.29.7(supports-color@7.2.0)
       '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
@@ -1386,41 +1498,33 @@ snapshots:
       '@types/babel__core': 7.20.5
       babel-loader: 10.1.1(@babel/core@7.29.7(supports-color@7.2.0))(@rspack/core@2.2.1(@swc/helpers@0.5.23))
       reduce-configs: 1.1.2
-    optionalDependencies:
-      '@rsbuild/core': 2.2.1
     transitivePeerDependencies:
       - '@rspack/core'
       - supports-color
       - webpack
 
-  '@rsbuild/plugin-solid@1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(solid-js@1.9.15)(supports-color@7.2.0)':
+  '@rsbuild/plugin-solid@1.2.2(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.15)(supports-color@7.2.0)':
     dependencies:
-      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.2.1)(supports-color@7.2.0)
+      '@rsbuild/plugin-babel': 1.2.1(supports-color@7.2.0)
       babel-preset-solid: 1.9.15(@babel/core@7.29.7(supports-color@7.2.0))(solid-js@1.9.15)
       solid-refresh: 0.6.3(solid-js@1.9.15)(supports-color@7.2.0)
-    optionalDependencies:
-      '@rsbuild/core': 2.2.1
     transitivePeerDependencies:
       - '@babel/core'
       - solid-js
       - supports-color
 
-  '@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0)':
+  '@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
-      '@rsbuild/plugin-babel': 1.2.1(@rsbuild/core@2.2.1)(supports-color@7.2.0)
+      '@rsbuild/plugin-babel': 1.2.1(supports-color@7.2.0)
       '@vue/babel-plugin-jsx': 2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0)
       babel-plugin-vue-jsx-hmr: 1.0.0(supports-color@7.2.0)
-    optionalDependencies:
-      '@rsbuild/core': 2.2.1
     transitivePeerDependencies:
       - '@babel/core'
       - supports-color
 
-  '@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)':
+  '@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)':
     dependencies:
       rspack-vue-loader: 17.6.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34)
-    optionalDependencies:
-      '@rsbuild/core': 2.2.1
     transitivePeerDependencies:
       - '@rspack/core'
       - '@vue/compiler-sfc'
@@ -1429,31 +1533,61 @@ snapshots:
   '@rspack/binding-darwin-arm64@2.2.1':
     optional: true
 
+  '@rspack/binding-darwin-arm64@2.2.3':
+    optional: true
+
   '@rspack/binding-darwin-x64@2.2.1':
+    optional: true
+
+  '@rspack/binding-darwin-x64@2.2.3':
     optional: true
 
   '@rspack/binding-linux-arm64-gnu@2.2.1':
     optional: true
 
+  '@rspack/binding-linux-arm64-gnu@2.2.3':
+    optional: true
+
   '@rspack/binding-linux-arm64-musl@2.2.1':
+    optional: true
+
+  '@rspack/binding-linux-arm64-musl@2.2.3':
     optional: true
 
   '@rspack/binding-linux-ppc64-gnu@2.2.1':
     optional: true
 
+  '@rspack/binding-linux-ppc64-gnu@2.2.3':
+    optional: true
+
   '@rspack/binding-linux-riscv64-gnu@2.2.1':
+    optional: true
+
+  '@rspack/binding-linux-riscv64-gnu@2.2.3':
     optional: true
 
   '@rspack/binding-linux-riscv64-musl@2.2.1':
     optional: true
 
+  '@rspack/binding-linux-riscv64-musl@2.2.3':
+    optional: true
+
   '@rspack/binding-linux-s390x-gnu@2.2.1':
+    optional: true
+
+  '@rspack/binding-linux-s390x-gnu@2.2.3':
     optional: true
 
   '@rspack/binding-linux-x64-gnu@2.2.1':
     optional: true
 
+  '@rspack/binding-linux-x64-gnu@2.2.3':
+    optional: true
+
   '@rspack/binding-linux-x64-musl@2.2.1':
+    optional: true
+
+  '@rspack/binding-linux-x64-musl@2.2.3':
     optional: true
 
   '@rspack/binding-wasm32-wasi@2.2.1':
@@ -1463,13 +1597,29 @@ snapshots:
       '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
     optional: true
 
+  '@rspack/binding-wasm32-wasi@2.2.3':
+    dependencies:
+      '@emnapi/core': 1.11.3
+      '@emnapi/runtime': 1.11.3
+      '@napi-rs/wasm-runtime': 1.1.6(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)
+    optional: true
+
   '@rspack/binding-win32-arm64-msvc@2.2.1':
+    optional: true
+
+  '@rspack/binding-win32-arm64-msvc@2.2.3':
     optional: true
 
   '@rspack/binding-win32-ia32-msvc@2.2.1':
     optional: true
 
+  '@rspack/binding-win32-ia32-msvc@2.2.3':
+    optional: true
+
   '@rspack/binding-win32-x64-msvc@2.2.1':
+    optional: true
+
+  '@rspack/binding-win32-x64-msvc@2.2.3':
     optional: true
 
   '@rspack/binding@2.2.1':
@@ -1489,13 +1639,44 @@ snapshots:
       '@rspack/binding-win32-ia32-msvc': 2.2.1
       '@rspack/binding-win32-x64-msvc': 2.2.1
 
+  '@rspack/binding@2.2.3':
+    optionalDependencies:
+      '@rspack/binding-darwin-arm64': 2.2.3
+      '@rspack/binding-darwin-x64': 2.2.3
+      '@rspack/binding-linux-arm64-gnu': 2.2.3
+      '@rspack/binding-linux-arm64-musl': 2.2.3
+      '@rspack/binding-linux-ppc64-gnu': 2.2.3
+      '@rspack/binding-linux-riscv64-gnu': 2.2.3
+      '@rspack/binding-linux-riscv64-musl': 2.2.3
+      '@rspack/binding-linux-s390x-gnu': 2.2.3
+      '@rspack/binding-linux-x64-gnu': 2.2.3
+      '@rspack/binding-linux-x64-musl': 2.2.3
+      '@rspack/binding-wasm32-wasi': 2.2.3
+      '@rspack/binding-win32-arm64-msvc': 2.2.3
+      '@rspack/binding-win32-ia32-msvc': 2.2.3
+      '@rspack/binding-win32-x64-msvc': 2.2.3
+
   '@rspack/core@2.2.1(@swc/helpers@0.5.23)':
     dependencies:
       '@rspack/binding': 2.2.1
     optionalDependencies:
       '@swc/helpers': 0.5.23
 
+  '@rspack/core@2.2.3(@swc/helpers@0.5.23)':
+    dependencies:
+      '@rspack/binding': 2.2.3
+    optionalDependencies:
+      '@swc/helpers': 0.5.23
+
   '@rspack/lite-tapable@1.1.5': {}
+
+  '@rstest/core@0.11.12':
+    dependencies:
+      '@rsbuild/core': 2.2.5
+      '@types/chai': 5.2.3
+    transitivePeerDependencies:
+      - '@module-federation/runtime-tools'
+      - core-js
 
   '@swc/helpers@0.5.23':
     dependencies:
@@ -1527,10 +1708,17 @@ snapshots:
     dependencies:
       '@babel/types': 7.29.8
 
+  '@types/chai@5.2.3':
+    dependencies:
+      '@types/deep-eql': 4.0.2
+      assertion-error: 2.0.1
+
   '@types/chrome@0.2.8':
     dependencies:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16
+
+  '@types/deep-eql@4.0.2': {}
 
   '@types/filesystem@0.0.36':
     dependencies:
@@ -1696,11 +1884,11 @@ snapshots:
 
   '@vue/shared@3.5.34': {}
 
-  addfox@0.2.9(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34):
+  addfox@0.2.9(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34):
     dependencies:
-      '@addfox/cli': 0.2.9(@rsbuild/core@2.2.1)(@rsbuild/plugin-babel@2.1.0(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(@rsbuild/core@2.2.1)(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)
-      '@addfox/core': 0.2.8(@rsbuild/core@2.2.1)
-      '@addfox/rsbuild-plugin-extension-monitor': 0.2.8(@rsbuild/core@2.2.1)(@rspack/core@2.2.1(@swc/helpers@0.5.23))
+      '@addfox/cli': 0.2.9(@rsbuild/plugin-babel@2.1.0(@rspack/core@2.2.1(@swc/helpers@0.5.23))(supports-color@7.2.0))(@rsbuild/plugin-vue-jsx@2.0.1(@babel/core@7.29.7(supports-color@7.2.0))(supports-color@7.2.0))(@rsbuild/plugin-vue@2.0.1(@rspack/core@2.2.1(@swc/helpers@0.5.23))(@vue/compiler-sfc@3.5.34))(@swc/helpers@0.5.23)(@vue/compiler-sfc@3.5.34)
+      '@addfox/core': 0.2.8
+      '@addfox/rsbuild-plugin-extension-monitor': 0.2.8(@rspack/core@2.2.1(@swc/helpers@0.5.23))
     transitivePeerDependencies:
       - '@module-federation/runtime-tools'
       - '@rsbuild/core'
@@ -1717,6 +1905,8 @@ snapshots:
   ansi-styles@4.3.0:
     dependencies:
       color-convert: 2.0.1
+
+  assertion-error@2.0.1: {}
 
   babel-loader@10.1.1(@babel/core@7.29.7(supports-color@7.2.0))(@rspack/core@2.2.1(@swc/helpers@0.5.23)):
     dependencies:

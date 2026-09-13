@@ -1,9 +1,8 @@
 /**
  * 划词翻译的端口客户端（content 端使用）。
  *
- * 原来 content 端（content/index.ts）和 options 测试板块各自重复实现了一段
- * "端口生命周期"：connect port、监听 CHUNK/DONE/ERROR、超时、清理监听器、
- * disconnect、异常断开兜底。这里收敛成一份，消费方只负责"写回差异"
+ * content 端发起一次划词翻译所需的端口生命周期（连接、监听 CHUNK/DONE/ERROR、
+ * 清理监听器、异常断开兜底）都收敛在这里，消费方只负责"写回差异"
  * （onChunk 如何把译文写回、onDone/onError/onDisconnect 如何收尾）。
  *
  * 消息协议见 types/messages.ts（START/CHUNK/DONE/ERROR），改动需两端同步。
@@ -22,7 +21,7 @@ export interface StreamTranslateCallbacks {
 	/** 翻译失败（已收到 ERROR） */
 	onError: (error: string) => void;
 	/**
-	 * 端口被异常断开（background 崩溃/被关闭，且未收到 DONE/ERROR）或超时。
+	 * 端口被异常断开（background 崩溃/被关闭，且未收到 DONE/ERROR）。
 	 * 注意：主动 abort() 不会触发此回调。
 	 */
 	onDisconnect?: () => void;
@@ -33,8 +32,6 @@ export interface StreamTranslateOptions extends StreamTranslateCallbacks {
 	text: string;
 	/** 网页元数据（content 端传入） */
 	pageMeta?: { title: string; description: string };
-	/** 超时毫秒：到达后自动断开并触发 onDisconnect。缺省不设超时 */
-	timeoutMs?: number;
 }
 
 export interface StreamTranslateHandle {
@@ -44,34 +41,24 @@ export interface StreamTranslateHandle {
 
 /**
  * 发起一次划词翻译，返回一个可 abort 的句柄。
- * 端口生命周期（连接、监听、清理、disconnect、超时）都由本函数统一管理。
+ * 端口生命周期（连接、监听、清理、disconnect）都由本函数统一管理。
  */
 export function streamTranslate(
 	options: StreamTranslateOptions,
 ): StreamTranslateHandle {
 	const port = browser.runtime.connect({ name: STREAM_TRANSLATE_PORT });
 	let finished = false;
-	let timeoutId: ReturnType<typeof setTimeout> | null =
-		options.timeoutMs !== undefined
-			? setTimeout(() => {
-					cleanup(true);
-				}, options.timeoutMs)
-			: null;
 
 	/**
-	 * 统一收尾：移除监听器、清超时、断连。
+	 * 统一收尾：移除监听器、断连。
 	 * @param notifyOnDisconnect 是否在收尾后触发 onDisconnect 兜底回调
-	 *   （超时/异常断开传 true；DONE/ERROR/主动 abort 传 false）
+	 *   （异常断开传 true；DONE/ERROR/主动 abort 传 false）
 	 */
 	function cleanup(notifyOnDisconnect: boolean): void {
 		if (finished) return;
 		finished = true;
 		port.onMessage.removeListener(messageHandler);
 		port.onDisconnect.removeListener(disconnectHandler);
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-			timeoutId = null;
-		}
 		port.disconnect();
 		if (notifyOnDisconnect) options.onDisconnect?.();
 	}

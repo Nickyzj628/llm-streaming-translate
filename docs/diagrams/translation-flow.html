@@ -5056,10 +5056,10 @@
         <!-- Edge paths -->
         <path data-edge-from="relay" data-edge-to="write" data-edge-label="CHUNK" data-edge-key="0" data-edge-id="e-chunk" data-composition-points="837.6,220;837.6,154" d="M 837.6 220 L 837.6 154" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="sel" data-edge-to="extract" data-edge-label="点击浮动按钮" data-edge-key="1" data-edge-id="e-click" data-composition-points="148,120;223.60000000000002,120" d="M 148 120 L 223.60000000000002 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="prep" data-edge-to="call" data-edge-key="2" data-edge-id="e-prep" data-composition-points="554.6,272;554.6,300;709.6,300;709.6,280" d="M 554.6 272 L 554.6 300 L 709.6 300 L 709.6 280" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="prep" data-edge-to="call" data-edge-key="2" data-edge-id="e-prep" data-composition-points="554.6,280;554.6,296;709.6,296;709.6,280" d="M 554.6 280 L 554.6 296 L 709.6 296 L 709.6 280" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="call" data-edge-to="llm" data-edge-label="POST /chat/completions（stream:true）" data-edge-key="3" data-edge-id="e-request" data-composition-points="643.6,253;627.6,253;627.6,426;709.6,426;709.6,398" d="M 643.6 253 L 627.6 253 L 627.6 426 L 709.6 426 L 709.6 398" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
         <path data-edge-from="write" data-edge-to="start" data-edge-label="错位/吞段 → restart 重译后半段" data-edge-key="4" data-edge-id="e-retry" data-composition-points="773.6,120;493.6,120" d="M 773.6 120 L 493.6 120" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="start" data-edge-to="prep" data-edge-label="START{text, pageMeta}" data-edge-key="5" data-edge-id="e-start" data-composition-points="434.6,146;434.6,168;554.6,168;554.6,220" d="M 434.6 146 L 434.6 168 L 554.6 168 L 554.6 220" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        <path data-edge-from="start" data-edge-to="prep" data-edge-label="START{text, pageMeta}" data-edge-key="5" data-edge-id="e-start" data-composition-points="434.6,146;434.6,168;554.6,168;554.6,212" d="M 434.6 146 L 434.6 168 L 554.6 168 L 554.6 212" class="a-emphasis" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         <path data-edge-from="llm" data-edge-to="relay" data-edge-label="SSE delta.content" data-edge-key="6" data-edge-id="e-stream" data-composition-points="761.6,372;777.6,372;777.6,426;837.6,426;837.6,272" d="M 761.6 372 L 777.6 372 L 777.6 426 L 837.6 426 L 837.6 272" class="a-dashed" stroke-width="1.4" marker-end="url(#arrowhead-dashed)"/>
         <path data-edge-from="extract" data-edge-to="start" data-edge-key="7" data-edge-id="e-text" data-composition-points="347.6,120;375.6,120" d="M 347.6 120 L 375.6 120" class="a-default" stroke-width="1.4" marker-end="url(#arrowhead)"/>
 
@@ -5122,19 +5122,20 @@
         <text data-detail="fine" x="837.6" y="142" class="t-frontend" font-size="7" text-anchor="middle">SegmentStreamParser</text>
         </g>
 
-        <g id="node-prep" data-node-id="prep" data-node-label="校验并构造请求" tabindex="0" role="button" aria-label="聚焦校验并构造请求，读配置，prompt 注入页面语境, background（service worker） › 长连接流式请求" aria-pressed="false" data-node-kind="backend" data-node-sublabel="读配置，prompt 注入页面语境" data-node-context="background（service worker） › 长连接流式请求">
-          <title>校验并构造请求 · 读配置，prompt 注入页面语境 · background（service worker） › 长连接流式请求</title>
-          <rect x="493.6" y="220" width="122" height="52" rx="6" class="c-mask"/>
-          <rect x="493.6" y="220" width="122" height="52" rx="6" class="c-backend" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(499.6 226) scale(0.6875)">
+        <g id="node-prep" data-node-id="prep" data-node-label="校验并构造请求" tabindex="0" role="button" aria-label="聚焦校验并构造请求，读配置，prompt 注入页面语境, background（service worker） › 长连接流式请求" aria-pressed="false" data-node-kind="backend" data-node-sublabel="读配置，prompt 注入页面语境" data-node-tag="prompt.ts" data-node-context="background（service worker） › 长连接流式请求">
+          <title>校验并构造请求 · 读配置，prompt 注入页面语境 · background（service worker） › 长连接流式请求 · prompt.ts</title>
+          <rect x="493.6" y="212" width="122" height="68" rx="6" class="c-mask"/>
+          <rect x="493.6" y="212" width="122" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(499.6 218) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="554.6" y="241" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">校验并构造请求</text>
-          <text data-detail="context" x="554.6" y="258" class="t-muted" font-size="7" text-anchor="middle">读配置，prompt 注入页面语境</text>
+          <text data-node-label="" data-detail-anchor="" x="554.6" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">校验并构造请求</text>
+          <text data-detail="context" x="554.6" y="250" class="t-muted" font-size="7" text-anchor="middle">读配置，prompt 注入页面语境</text>
+        <text data-detail="fine" x="554.6" y="268" class="t-backend" font-size="7" text-anchor="middle">prompt.ts</text>
         </g>
 
-        <g id="node-call" data-node-id="call" data-node-label="流式调用 LLM" tabindex="0" role="button" aria-label="聚焦流式调用 LLM，POST /chat/completions stream:true, background（service worker） › 流式回传与写回" aria-pressed="false" data-node-kind="backend" data-node-sublabel="POST /chat/completions stream:true" data-node-tag="fetch + parseSSE" data-node-context="background（service worker） › 流式回传与写回">
-          <title>流式调用 LLM · POST /chat/completions stream:true · background（service worker） › 流式回传与写回 · fetch + parseSSE</title>
+        <g id="node-call" data-node-id="call" data-node-label="流式调用 LLM" tabindex="0" role="button" aria-label="聚焦流式调用 LLM，POST /chat/completions stream:true, background（service worker） › 流式回传与写回" aria-pressed="false" data-node-kind="backend" data-node-sublabel="POST /chat/completions stream:true" data-node-tag="ai stream" data-node-context="background（service worker） › 流式回传与写回">
+          <title>流式调用 LLM · POST /chat/completions stream:true · background（service worker） › 流式回传与写回 · ai stream</title>
           <rect x="643.6" y="212" width="132" height="68" rx="6" class="c-mask"/>
           <rect x="643.6" y="212" width="132" height="68" rx="6" class="c-backend" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(649.6 218) scale(0.6875)">
@@ -5142,7 +5143,7 @@
           </g>
           <text data-node-label="" data-detail-anchor="" x="709.6" y="233" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">流式调用 LLM</text>
           <text data-detail="context" x="709.6" y="250" class="t-muted" font-size="6" text-anchor="middle">POST /chat/completions stream:true</text>
-        <text data-detail="fine" x="709.6" y="268" class="t-backend" font-size="7" text-anchor="middle">fetch + parseSSE</text>
+        <text data-detail="fine" x="709.6" y="268" class="t-backend" font-size="7" text-anchor="middle">ai stream</text>
         </g>
 
         <g id="node-relay" data-node-id="relay" data-node-label="逐帧回传 CHUNK" tabindex="0" role="button" aria-label="聚焦逐帧回传 CHUNK，for-await 解析逐帧回传, background（service worker） › 流式回传与写回" aria-pressed="false" data-node-kind="backend" data-node-sublabel="for-await 解析逐帧回传" data-node-context="background（service worker） › 流式回传与写回">
@@ -5404,7 +5405,7 @@
         </div>
         <ul>
           <li>&bull; 每个文本节点 = 一段，段间用带绝对序号的 {{segN}} 分隔（含最后一段）；不译内容与 pre/code 整块替换为 {{varN}} 占位</li>
-          <li>&bull; 构造与解析共用 utils/protocol.ts，content 写回与 prompt 改动必须两端同步，否则译文错位</li>
+          <li>&bull; 标记形态（{{segN}}/{{varN}}）唯一定义在 utils/protocol.ts：content 构造、流式解析与 prompt 说明全部由它派生</li>
         </ul>
       </div>
 
@@ -5416,6 +5417,18 @@
         <ul>
           <li>&bull; 端口断开（打断翻译/页面卸载）→ background 立即 abort() 中止 HTTP 流，避免空耗 token</li>
           <li>&bull; 错位重试上限 5 次，只重译错位段之后的后半段；超限或出错 → 恢复锚点原文（回滚）</li>
+          <li>&bull; 会话编排收敛在 TranslationSession：结束状态由会话自身判定，旧会话的迟到回调不影响新会话</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>模块分工（重构后）</h3>
+        </div>
+        <ul>
+          <li>&bull; content：domAnchor（DOM 遍历与锚点）/ segmentPlan（编号与协议行）/ InlineTranslator（流式写回）/ TranslationSession（一次会话）/ TranslationController（活跃会话门面）</li>
+          <li>&bull; background：prompt.ts 是模型侧协议契约，StreamTranslator 只做传输；两者与 content 共享 utils/protocol.ts 的标记定义</li>
         </ul>
       </div>
     </div>

@@ -87,6 +87,7 @@
       "type": "backend",
       "label": "校验并构造请求",
       "sublabel": "读配置，prompt 注入页面语境",
+      "tag": "prompt.ts",
       "width": 122
     },
     {
@@ -96,7 +97,7 @@
       "type": "backend",
       "label": "流式调用 LLM",
       "sublabel": "POST /chat/completions stream:true",
-      "tag": "fetch + parseSSE",
+      "tag": "ai stream",
       "width": 132
     },
     {
@@ -188,7 +189,7 @@
       "title": "段对齐协议（核心约定）",
       "items": [
         "每个文本节点 = 一段，段间用带绝对序号的 {{segN}} 分隔（含最后一段）；不译内容与 pre/code 整块替换为 {{varN}} 占位",
-        "构造与解析共用 utils/protocol.ts，content 写回与 prompt 改动必须两端同步，否则译文错位"
+        "标记形态（{{segN}}/{{varN}}）唯一定义在 utils/protocol.ts：content 构造、流式解析与 prompt 说明全部由它派生"
       ]
     },
     {
@@ -196,7 +197,16 @@
       "title": "中止与恢复",
       "items": [
         "端口断开（打断翻译/页面卸载）→ background 立即 abort() 中止 HTTP 流，避免空耗 token",
-        "错位重试上限 5 次，只重译错位段之后的后半段；超限或出错 → 恢复锚点原文（回滚）"
+        "错位重试上限 5 次，只重译错位段之后的后半段；超限或出错 → 恢复锚点原文（回滚）",
+        "会话编排收敛在 TranslationSession：结束状态由会话自身判定，旧会话的迟到回调不影响新会话"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "模块分工（重构后）",
+      "items": [
+        "content：domAnchor（DOM 遍历与锚点）/ segmentPlan（编号与协议行）/ InlineTranslator（流式写回）/ TranslationSession（一次会话）/ TranslationController（活跃会话门面）",
+        "background：prompt.ts 是模型侧协议契约，StreamTranslator 只做传输；两者与 content 共享 utils/protocol.ts 的标记定义"
       ]
     }
   ]

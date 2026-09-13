@@ -9,14 +9,16 @@
 		"build:firefox": "addfox build --browser firefox --no-open",
 		"build:chrome": "addfox build --browser chrome --no-open",
 		"typecheck": "tsc --noEmit",
-		"lint": "biome check app/",
-		"lint:fix": "biome check --write app/",
-		"format": "biome format --write app/",
-		"format:check": "biome format app/",
-		"zip:source": "7z a .addfox/extension/source.zip . -xr!node_modules -xr!.addfox -xr!dist -xr!*.zip -xr!.git -uq0"
+		"lint": "biome check",
+		"lint:fix": "biome check --write",
+		"format": "biome format --write",
+		"format:check": "biome format",
+		"zip:source": "7z a .addfox/extension/source.zip . -xr!node_modules -xr!.addfox -xr!dist -xr!*.zip -xr!.git -uq0",
+		"test": "rstest run"
 	},
 	"dependencies": {
 		"@addfox/utils": "^0.2.6",
+		"@nickyzj2023/ai": "^1.5.0",
 		"@nickyzj2023/utils": "^1.0.95",
 		"solid-js": "^1.9.15",
 		"webextension-polyfill": "^0.12.0"
@@ -25,6 +27,7 @@
 		"@biomejs/biome": "^2.5.12",
 		"@rsbuild/plugin-babel": "^2.1.0",
 		"@rsbuild/plugin-solid": "^1.2.2",
+		"@rstest/core": "^0.11.12",
 		"@types/chrome": "^0.2.8",
 		"@types/node": "^26.4.1",
 		"@types/webextension-polyfill": "^0.12.6",
