@@ -18,19 +18,19 @@ export const PRESETS: Preset[] = [
 	{
 		name: "DeepSeek",
 		baseUrl: "https://api.deepseek.com",
-		model: "deepseek-v4-flash",
+		model: "deepseek-flash",
 		body: '{"thinking": {"type": "disabled"}}',
 	},
 	{
 		name: "OpenRouter",
 		baseUrl: "https://openrouter.ai/api/v1",
-		model: "openai/gpt-5.6-luna",
+		model: "~openai/gpt-luna-latest",
 		body: '{"reasoning_effort": "minimal"}',
 	},
 	{
 		name: "Google AI Studio",
 		baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
-		model: "gemma-4-26b-a4b-it",
+		model: "gemma-4-31b-it",
 		body: '{"reasoning_effort": "minimal"}',
 	},
 	{
