@@ -22,7 +22,7 @@
 
 ## 架构要点
 
-> 完整调用链、文件职责表与协议说明见 **`ARCHITECTURE.md`**（新人阅读入口，避免多文件跳转）。
+> 完整调用链与阶段详解见 **`ARCHITECTURE.md`**（新人阅读入口，按"概览 → 阅读建议 → 阶段详解"编排）。
 
 ### 翻译流程（选词 → 流式原地替换）
 1. `app/content/index.ts`：监听选区，弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。
