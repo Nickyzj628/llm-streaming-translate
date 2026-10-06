@@ -96,8 +96,6 @@ export function startStreamTranslation(
 
 			// options.body 会被平铺进 /chat/completions 请求体（上游支持），
 			// 所以设置项 body 的额外字段照旧生效
-			// options.body 会被平铺进 /chat/completions 请求体（上游支持），
-			// 所以设置项 body 的额外字段照旧生效
 			for await (const event of stream(
 				{ baseUrl, model: modelName, apiKey },
 				messages,

@@ -1,123 +1,126 @@
 ---
 version: "alpha"
 name: "Minimal & Direct"
-description: "Minimal direct landing page. Ideal for marketing, conversão, lead gen. AI-ready template."
+description: "浏览器扩展设置页（options）的设计规范：单列居中、大量留白、无装饰。"
 colors:
-  primary: "#1A1A1A"
-  secondary: "#4A4A4A"
-  tertiary: "#0066FF"
-  neutral: "#FFFFFF"
+  primary: "#171717"
+  secondary: "#666666"
+  tertiary: "#0066ff"
+  success: "#0070f3"
+  danger: "#ff5b4f"
+  neutral: "#ffffff"
 typography:
   h1:
     fontFamily: System UI stack
-    fontSize: 2.25rem
+    fontSize: clamp(2rem, 5vw, 2.5rem)
     fontWeight: 700
-  body-md:
+  body:
     fontFamily: System UI stack
     fontSize: 1rem
     fontWeight: 400
-  label-caps:
+  label:
     fontFamily: System UI stack
-    fontSize: 0.75rem
+    fontSize: 0.875rem
     fontWeight: 500
+  small:
+    fontFamily: System UI stack
+    fontSize: 0.875rem
+    fontWeight: 400
 ---
 
-## Overview
+## 适用范围
 
-Minimal direct landing page. Ideal for marketing, conversão, lead gen. AI-ready template. Somewhere around 2018, developers got tired. Tired of hero sections with stock photos, tired of gradient buttons begging for clicks, tired of landing pages that read like a used car lot. The indie web movement wasn't a manifesto — it was a quiet rebellion. People started shipping single-column pages with nothing but a headline, a paragraph, and a link. Done.
+只管 `app/options/` 设置页——项目里唯一的 HTML 界面。content 端的浮动按钮是独立的
+Shadow DOM UI（内联样式，随宿主页面混排），不走这套 token；background 没有界面。
 
-This wasn't laziness. It was taste. Developers who'd spent years building bloated marketing sites for clients turned around and made their own stuff with radical economy. One typeface. One column. Plenty of air. The influence came from editorial design — magazines, not SaaS templates. From people like Brutalist Websites, from the personal sites of designers who understood that removing things is harder than adding them.
+颜色/间距/圆角/字体一律从 `app/styles/variables.css` 的 CSS 变量取，组件里不写死色值。
 
-The pattern stuck because it works. When you strip a page down to text and space, every word has to earn its place. There's nowhere to hide behind a carousel or a testimonial slider. It's just you and your craft, presented without apology.
+## 设计取向
 
-- Density: 3/10 — Airy
-- Variance: 3/10 — Restrained
-- Motion: 6/10 — Expressive
+三条规矩，都来自这套风格的核心：去掉东西比加上东西难。
 
-- **Style:** Landing Page
-- **Keywords:** Minimal text, white space heavy, single column layout, direct messaging, clean typography, visual-centric, fast-loading
-- **Era:** 2020s Modern
-- **Light/Dark:** ✓ Full / ✓ Full
+1. 单列居中：正文最大宽度 640px，两侧留白 `clamp(3rem, 8vw, 6rem) 1.5rem`。
+2. 大量留白：区块间距 24px 起跳，标题与表单之间 32px。
+3. 无装饰：不加阴影层级、不做位移/缩放的 hover 动画、不用渐变色块与图标装饰。
 
 ## Colors
 
-- Palette derived from style keywords and era context
+| 变量 | 值 | 用途 |
+|---|---|---|
+| `--black` / `--primary` | `#171717` | 正文文字、主按钮底色（不用纯黑） |
+| `--grey` | `#666666` | 标签、提示文案等次要文字 |
+| `--greyLight` | `#888888` | 输入框 placeholder |
+| `--tertiary` | `#0066ff` | 唯一强调色：focus ring |
+| `--success` | `#0070f3` | Toast 成功态底色 |
+| `--danger` | `#ff5b4f` | Toast 失败态底色 |
+| `--white` / `--bg` | `#ffffff` | 页面与控件底色 |
+| `--bgSubtle` | `#fafafa` | 次要按钮的 hover/active 底色 |
 
+边框统一用 `1px solid rgba(0, 0, 0, 0.12)`（不单列变量）。
 
 ## Typography
 
-- **Display / Hero:** System UI stack (-apple-system, sans-serif) — Weight 700, tight tracking, used for headline impact
-- **Body:** System UI stack (-apple-system, sans-serif) — Weight 400, 16px/1.6 line-height, max 72ch per line
-- **UI Labels / Captions:** System UI stack (-apple-system, sans-serif) — 0.875rem, weight 500, slight letter-spacing
-- **Monospace:** JetBrains Mono — Used for code, metadata, and technical values
-
-Scale:
-- Hero: clamp(2.5rem, 5vw, 4rem)
-- H1: 2.25rem
-- H2: 1.5rem
-- Body: 1rem / 1.6
-- Small: 0.875rem
-
+- 正文与界面一律系统字体栈（`--fontFamily`），不加载 web font。
+- 标题：`clamp(2rem, 5vw, 2.5rem)`、700、`letter-spacing: -0.03em`。
+- 正文 16px/400，标签 14px/500（`--grey`），提示文案 14px/400（`--grey`）。
+- 中文与拉丁混排时字距统一收 `-0.01em`。
 
 ## Layout
 
-- **Grid:** CSS Grid primary. Max-width containment: 1280px centered with 1.5rem side padding.
-- **Spacing rhythm:** Balanced. Base unit: 0.5rem (8px).
-- **Section vertical gaps:** clamp(4rem, 8vw, 8rem).
-- **Hero layout:** Split-screen (text left, visual right).
-- **Feature sections:** Zig-zag alternating text+image rows. No 3-equal-columns.
-- **Mobile collapse:** All multi-column layouts collapse below 768px. No horizontal overflow.
-- **z-index contract:** base (0) / sticky-nav (100) / overlay (200) / modal (300) / toast (500).
-
+- `body` 用 flex 水平居中，`min-height: 100vh`，页面级内边距 `clamp(3rem, 8vw, 6rem) 1.5rem`。
+- 容器 `.options` 宽 100%、`max-width: 640px`；不设栅格，永远单列。
+- 表单区 `.form` 下边距 32px；每个 `.section` 下边距 24px，最后一个 32px。
+- 次要说明用 `.hint` 挂在控件下方 8px 处。
+- 页面没有响应式断点：单列布局在窄屏自然成立，只靠 `clamp()` 缩放字号与留白。
 
 ## Elevation & Depth
 
-Very subtle hover effects, minimal animations, fast page load (no heavy animations), smooth scroll
+**不用阴影表达层级。** 唯一的例外是 Toast——它是盖在页面上的浮层，用
+`0 2px 8px rgba(0, 0, 0, 0.08)`；Combobox 候选列表这类浮层只用 1px 边框加白底区分。
 
-- **Physics:** Spring — stiffness 120, damping 20. Confident, weighted transitions.
-- **Entry animations:** Fade + translate-Y (16px → 0) over 480ms ease-out. Staggered cascades for lists: 100ms between items.
-- **Hover states:** Scale(1.03) + shadow lift over 200ms.
-- **Page transitions:** Fade + slide (300ms).
-- **Performance:** Only transform and opacity animated. No layout-triggering properties.
-
+`variables.css` 里定义了 `--shadowBorder` / `--shadowAmbient` / `--shadowElevated` /
+`--shadowFocus` 四个"以阴影当边框"的 token，但当前**没有任何使用点**——留着给以后真需要
+层级时用，不算本规范的一部分。
 
 ## Shapes
 
-Base corner radius: 8px. See rounded tokens in front matter for the full scale.
-
+- 控件圆角统一 8px（`--radiusMd`）。
+- 小圆角(6px)与大圆角(12px)两个 token 目前也没使用点。
 
 ## Components
 
-- **Primary Button:** Subtly rounded (0.5rem) shape. Accent color fill. Hover: 8% darken + subtle lift shadow. Active: -1px translate tactile press. Font weight 600. No outer glows.
-- **Secondary / Ghost Button:** Outline variant. 1.5px border in muted color. Text in primary color. Hover: subtle background fill.
-- **Cards:** Subtly rounded (0.5rem) corners. Surface background. Subtle shadow (0 2px 12px rgba(0,0,0,0.06)). 1px border stroke.
-- **Inputs:** Label above input. 1px border stroke. Focus ring: 2px accent color offset 2px. Error text below in semantic red. No floating labels.
-- **Navigation:** Primary surface background. Active item: accent color indicator. Font weight 500 when active.
-- **Skeletons:** Shimmer animation matching component dimensions. No circular spinners.
-- **Empty States:** Icon-based composition with descriptive text and action button.
+### Input / Textarea / Select
 
+- 1px 边框、圆角 8px、内边距 `12px 14px`、白底 `#171717` 字。
+- `<select>` 隐藏原生箭头，右侧自绘 chevron（内联 SVG，`--grey` 描边）。
+- `<textarea>` 允许 `resize: vertical`，其余控件尺寸固定。
+- **唯一的交互反馈**：`:focus-visible` 时 `outline: 2px solid var(--tertiary); outline-offset: 2px`。
+  没有边框变色、没有过渡动画。
+
+### Button
+
+- `primary`：黑底白字，hover 底色变暗 8%、active 12%（`color-mix`），无位移、无外发光。
+- `secondary`：白底 + 1px 边框，hover/active 换 `--bgSubtle`。
+- 尺寸：`small` `8px 12px` / 13px，`medium` `10px 16px` / 14px，`large` `12px 24px` / 14px。
+- 键盘反馈同样只有 focus ring；按钮内文字禁止换行。
+
+### Combobox（模型选择）
+
+- 输入框规格同 Input，右侧留 40px 给展开箭头；箭头 32px 见方、透明底、`--grey` 图标。
+- 候选列表绝对定位在输入框下方 4px，白底 + 1px 边框，最高 240px，超出滚动。
+- 展开/收起不做淡入动画；hover 与键盘高亮统一用 `--bg` 底。
+- 允许手动输入不与候选匹配的模型名（没有 `/models` 接口的供应商）。
+
+### Toast
+
+- 固定在视口顶部居中（`top: 20px`），白字，内边距 `12px 24px`，圆角 8px。
+- 成功态 `--success`，失败态 `--danger`；自动消失，不做入场动画。
 
 ## Do's and Don'ts
 
-- No emojis in UI — use icon system only (Lucide, Heroicons)
-- No decorative gradients — flat color only
-- No shadows heavier than 0 2px 8px rgba(0,0,0,0.08)
-- No pure black (#000000) — use off-black or charcoal variants
-- No oversaturated accent colors (saturation cap: 80%)
-- No 3-column equal-width feature layouts — use zig-zag or asymmetric grid
-- No `h-screen` — use `min-h-[100dvh]`
-- No AI copywriting clichés: "Elevate", "Seamless", "Unleash", "Next-Gen"
-- No broken external image links — use picsum.photos or inline SVG
-- No generic lorem ipsum in demos
-
-- Do Single column centered
-- Do White space generous
-- Do One primary CTA only
-- Do No decorative images
-- Do Page weight < 500KB
-- Do Load time < 2s
-
-
-## Use Case
-
-Marketing, Conversion, Lead gen
+- 只用 `variables.css` 里的 token，别在组件里硬编码色值。
+- 交互反馈只保留 focus ring（2px accent + offset 2px）。
+- hover / active 只改背景色或文字色，不做位移、缩放、外发光。
+- 不用纯黑 `#000000`（用 `--black`）、不用渐变、不用装饰性图标。
+- 浮层用 1px 边框加白底区分，不引入卡片阴影层级。
+- 不做多列布局，不加响应式断点（`clamp()` 已覆盖缩放需求）。

@@ -2,7 +2,8 @@
  * 划词翻译的段对齐协议（占位符 + 段序号）公共逻辑。
  *
  * 协议约定（两端必须同步，改动前先读 AGENTS.md 的"最容易踩的坑"）：
- * - content 端（InlineTranslator.ts）构造输入：每个文本节点 = 一段，每段后跟
+ * - content 端（TranslationSession.ts 拼协议文本、InlineTranslator.ts 建段锚点）
+ *   构造输入：每个文本节点 = 一段，每段后跟
  *   带序号的段分隔标记 {{segN}}（N 为绝对段序号，从 1 递增，最后一段也必须带）；
  *   "不译内容"（未选中部分 / pre/code 等 preserve 节点）统一替换为占位符
  *   {{var1}}、{{var2}}...（编号全局递增），模型只需原样照抄标记，无需理解任何标签结构；
@@ -12,16 +13,15 @@
  * 为什么用带序号的 {{segN}} 而不是固定 {{seg}}：长文多段纯文本之间没有占位符，
  * 固定分隔符无法在流式阶段判断"模型在哪一段开始拆/并段错位"，只能全文重译。
  * 序号让"第 i 个输出段结束于 {{segi}}"成为每段都有的地标，content 端据此精确
- * 定位错位段并只重译后半段（断点重试），详见 InlineTranslator.ts 的注释。
+ * 定位错位段并只重译后半段（断点重试），详见 TranslationSession.ts 的注释。
  *
- * 本模块由 content 端（InlineTranslator.ts）写回使用。
+ * 本模块由 content 端（TranslationSession.ts）解析、拼接与写回使用。
  */
 
 /**
  * 协议标记的形态（{{segN}} / {{varN}}）。这里是标记形态的唯一来源：
- * 拼接函数、prompt 说明（app/background/prompt.ts）都由它派生，改形态只动这三行。
- * 仅"字符级截断前缀"正则（INCOMPLETE_PROTOCOL_TAIL_RE）与拆段正则与字面字符强耦合，
- * 需一并手改。
+ * 拼接函数、说明形态（*_LABEL）、下面几个正则与 prompt 说明（app/background/prompt.ts）
+ * 全由这几个常量派生，改形态只动这里。
  */
 const MARKER_PREFIX = "{{";
 const MARKER_SUFFIX = "}}";
@@ -30,17 +30,43 @@ export const SEGMENT_MARKER = "seg";
 /** 占位符标记名：{{varN}} 的 var */
 export const PLACEHOLDER_MARKER = "var";
 
+/** 转义正则元字符。标记是拼进正则的，{ 这类字符在 u 模式下不转义直接语法错误 */
+function escapeRegExp(text: string): string {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 把标记名展开成"所有非空前缀"的正则片段（末位允许跟数字）：
+ * seg → s(?:e(?:g\d*)?)，能匹配 {{ / {{s / {{se / {{seg / {{seg12 这些半成品。
+ */
+function partialMarkerPattern(name: string): string {
+	let pattern = "";
+	for (let i = name.length - 1; i >= 0; i--) {
+		const char = escapeRegExp(name[i]);
+		pattern = pattern === "" ? `${char}\\d*` : `${char}(?:${pattern})?`;
+	}
+	return pattern;
+}
+
 /** 段分隔标记的说明形态 {{segN}}（N 为待填序号的占位）：prompt 说明用 */
 export const SEGMENT_MARKER_LABEL = `${MARKER_PREFIX}${SEGMENT_MARKER}N${MARKER_SUFFIX}`;
 /** 占位符的说明形态 {{varN}}：prompt 说明用 */
 export const PLACEHOLDER_MARKER_LABEL = `${MARKER_PREFIX}${PLACEHOLDER_MARKER}N${MARKER_SUFFIX}`;
 
-/** 占位符：匹配不译内容留下的 {{varN}} 标记（N 为不译片段编号，全局递增） */
-const PLACEHOLDER_RE = /\{\{var\d+\}\}/g;
+/** 匹配完整的占位符 {{varN}}（N 为不译片段编号，全局递增） */
+const PLACEHOLDER_RE = new RegExp(
+	`${escapeRegExp(MARKER_PREFIX)}${PLACEHOLDER_MARKER}\\d+${escapeRegExp(MARKER_SUFFIX)}`,
+	"g",
+);
+
+/** 匹配完整的段分隔标记 {{segN}}，捕获组取序号 N（供 split 拆段用） */
+const SEGMENT_SPLIT_RE = new RegExp(
+	`${escapeRegExp(MARKER_PREFIX)}${SEGMENT_MARKER}(\\d+)${escapeRegExp(MARKER_SUFFIX)}`,
+);
 
 /**
  * 生成带序号的段分隔标记（如 {{seg1}}，N 为绝对段序号，从 1 递增）。
- * content 端（InlineTranslator.ts）构造输入、background 解析输出与 prompt 示例共用，
+ * content 端（TranslationSession.ts）拼协议文本、background 转发与 prompt 示例共用，
  * 是"段数对齐"协议的核心标记。
  */
 export function segmentSeparator(segmentNumber: number): string {
@@ -49,7 +75,7 @@ export function segmentSeparator(segmentNumber: number): string {
 
 /**
  * 生成带序号的占位符（如 {{var1}}，N 为不译片段编号，全局递增）。
- * content 端（InlineTranslator.ts）构造协议行与 prompt 示例共用。
+ * content 端（segmentPlan.ts）构造协议行与 prompt 示例共用。
  */
 export function placeholderMarker(index: number): string {
 	return `${MARKER_PREFIX}${PLACEHOLDER_MARKER}${index}${MARKER_SUFFIX}`;
@@ -58,9 +84,9 @@ export function placeholderMarker(index: number): string {
 /**
  * 把协议行按绝对段序号拼接成完整协议文本。
  * 每段（含最后一段）后跟 {{segN}} 分隔标记，N = startIndex + i + 1（绝对段序号，1 起）。
- * content 端（InlineTranslator）使用：
+ * content 端（TranslationSession）使用：
  * - 初始：startIndex = 0；
- * - 断点重试（restart）：startIndex = fromSegment，序号保持"绝对递增且唯一"，协议自洽。
+ * - 断点重试：startIndex = fromSegment，序号保持"绝对递增且唯一"，协议自洽。
  */
 export function joinSegmentRows(rows: string[], startIndex = 0): string {
 	let out = "";
@@ -81,10 +107,13 @@ export function joinSegmentRows(rows: string[], startIndex = 0): string {
  *   {{varN}}  的前缀： {{ / {{v / {{va / {{var / {{var + 任意数字
  * 完整分隔符会被 split 识别、完整占位符由 extractTranslatedContent 删除，
  * 二者都不会以"前缀"形态出现在段尾，因此不会误删真实译文。
- * 与 content 端（InlineTranslator.ts）的流式写回共用，改动分隔符/占位符时必须同步此处。
+ * 与 content 端（TranslationSession.ts）的流式写回共用。
  */
-const INCOMPLETE_PROTOCOL_TAIL_RE =
-	/\{\{(?:s(?:e(?:g\d*)?)?|v(?:a(?:r\d*)?)?)?$/u;
+const INCOMPLETE_PROTOCOL_TAIL_RE = new RegExp(
+	`${escapeRegExp(MARKER_PREFIX)}` +
+		`(?:${partialMarkerPattern(SEGMENT_MARKER)}|${partialMarkerPattern(PLACEHOLDER_MARKER)})?$`,
+	"u",
+);
 
 function stripIncompleteSegmentPrefix(text: string): string {
 	const match = text.match(INCOMPLETE_PROTOCOL_TAIL_RE);
@@ -121,18 +150,18 @@ export interface SegmentStreamSink {
 
 /**
  * 段流解析器：把"可能被任意切分的译文 chunk 流"增量解析成
- * "完整段 + 未完成尾段"回调，规则与 content 端写回完全一致。
+ * "完整段 + 未完成尾段"回调，供会话层逐段写回。
  *
  * 为什么收敛在这里：段对齐协议（{{segN}} 拆分 / 未完成前缀剥离 / 空段对齐）是
  * 最容易写漂的逻辑（AGENTS.md"最容易踩的坑"）。由本类作为唯一实现保证行为一致，
- * 消费方只负责"把段写回自己的目标"（DOM 锚点）。
+ * 消费方（TranslationSession.ts）只负责"把段写回自己的目标"。
  */
 export class SegmentStreamParser {
 	private buffer = "";
 	/**
 	 * 模型输出的段总数（完整段 + 收尾时的非空尾段）。
 	 *
-	 * 用途：段数对齐兜底（InlineTranslator.finish）。流式阶段靠 {{segN}} 序号逐段
+	 * 用途：段数对齐兜底（会话收到 DONE 后拿它判断末尾有没有吞段）。流式阶段靠 {{segN}} 序号逐段
 	 * 校验，但"模型漏抄末尾分隔符、把最后两段合并"这类情况序号校验抓不到（尾段
 	 * 没有序号），需要在收尾时用"模型输出段数 vs 期望段数"兜底，少段即触发重试。
 	 */
@@ -150,7 +179,7 @@ export class SegmentStreamParser {
 		this.buffer += chunk;
 		// 分隔符带序号：用带捕获组的正则 split，返回 [段0, 序号0, 段1, 序号1, ..., 尾段]。
 		// 即偶数下标是段内容、奇数下标是该段结束处的 {{segN}} 序号，最后一个是未完成尾段。
-		const parts = this.buffer.split(/\{\{seg(\d+)\}\}/);
+		const parts = this.buffer.split(SEGMENT_SPLIT_RE);
 		const fullSegments = Math.floor((parts.length - 1) / 2);
 
 		// 除最后一段外都是完整段（其后已有 {{segN}}）。空段也要回调以消耗一个段下标，

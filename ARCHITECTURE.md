@@ -25,16 +25,15 @@
 > （9/9 showcase 检查），勿手改 HTML。
 
 **回传方向**：`CHUNK` 逐 chunk 沿端口回到 `streamTranslate.ts` 的 `messageHandler`，
-再触发 `onChunk` → `InlineTranslator.appendChunk` 写回。
+再触发 `onChunk` → `TranslationSession` 持有的 `SegmentStreamParser` 逐段写回。
 
 ## 3. 文件职责表
 
 | 文件 | 职责 | 一句话 |
 |---|---|---|
-| `app/content/index.ts` | content 入口、事件编排 | 收敛"事件 → 动作"声明式转发，点击后流程的阅读入口 |
-| `app/content/TranslationController.ts` | 控制器门面 | 只持有"当前活跃会话"，对外提供 start/abort/dispose/getSelectedText/isTranslating |
-| `app/content/TranslationSession.ts` | 一次会话的编排 | 请求、错位重试、收尾/放弃都在这一个对象里；是否结束由会话自身判定 |
-| `app/content/InlineTranslator.ts` | 段目标建立 + 流式写回 | 编排"收集 → 计划 → 锚点"，维护段序对齐与 restart/finish/destroy |
+| `app/content/index.ts` | content 入口、事件编排、活跃会话持有 | 事件转发 + start/abort 两个动作，点击后流程的阅读入口 |
+| `app/content/TranslationSession.ts` | 一次会话的编排 | 协议文本拼接、流式解析写回、错位重试、收尾/放弃都在这；端口客户端由入口注入（纯逻辑可单测） |
+| `app/content/InlineTranslator.ts` | 段锚点建立 + 按段写回 | 编排"收集 → 计划 → 锚点"，对外只给段数/协议行与 writeSegment/restoreSegment/finish/destroy |
 | `app/content/segmentPlan.ts` | 段计划纯逻辑 | 占位符编号与协议行拼接（与 DOM 解耦，有单测） |
 | `app/content/domAnchor.ts` | DOM 锚点层 | 选区遍历、锚点包裹与恢复（只做 DOM，不做决策） |
 | `app/content/FloatingButton.ts` | 浮动按钮的 DOM/样式/点击回传 | 纯 UI，无业务逻辑 |
@@ -49,35 +48,41 @@
 ## 4. 四阶段详解
 
 ### 阶段一：划词 → 显示浮动按钮
-- `content/index.ts`：`handleMouseUp` → `controller.getSelectedText()` 读选区文本。
-- 有文字 → `showButton(x, y)` + `onClick(() => controller.start(range))`。
+- `content/index.ts`：`handleMouseUp` → `getSelectedText()` 读选区文本。
+- 有文字 → `showButton(x, y)` + `onClick(() => startTranslation(range))`。
 - 按钮 DOM 全在 `FloatingButton.ts`（每次点击都 `show()` 重建，`onClick` 注册点击回调）。
 
 ### 阶段二：点击按钮 → 建立段目标
-- `TranslationController.start(range)`：先打断旧会话，再 `createInlineTranslator(range)`。
+- `index.ts` 的 `startTranslation(range)`：先打断旧会话，再 `createInlineTranslator(range)`。
 - `InlineTranslator.buildSegments(range)` 分三步：
   - `domAnchor.collectTextNodes(range)`：`TreeWalker` 遍历选区，收集相交文本节点及其选中范围与所属 preserve 块。**只收集、不改 DOM**——TreeWalker 是 live 的，先改会让遍历位置漂移；
   - `segmentPlan.planSegments(inputs)`：纯逻辑产出**段计划**（占位符编号 + 协议行）。preserve 块整块折叠为一段（同一块内后续节点跳过），普通节点 before/after 各占一个占位符（为空则省略）；协议行内的连续换行折叠为空格，而 `originalText` 保留原始换行（回滚要逐字恢复）；
   - 回到 DOM 层建立锚点：普通节点包 `<span class="llm-selected">`（只包选中部分），preserve 块包整个最外层元素。协议行直接存在段目标里（不再用平行数组靠下标对应）。
-- `translator.getText()` = `joinSegmentRows(segments.map(s => s.row), 0)`。
+- `translator.getRows()` 给会话：协议文本由会话用 `joinSegmentRows(rows, 0)` 拼出，每段后跟 `{{segN}}`。
 
 ### 阶段三：发出 LLM 请求（端口通信）
-- `TranslationSession.runStream(text)` 内 `streamTranslate({ text, pageMeta, onChunk/onDone/onError/onDisconnect })`。
+- `TranslationSession.runStream(text)` 内调用注入的 `transport`（入口传的是 `streamTranslate`）：
+  `{ text, pageMeta, onChunk/onDone/onError/onDisconnect }`。
 - `streamTranslate.ts`：`browser.runtime.connect("stream-translate")`，post `START`，监听 `CHUNK/DONE/ERROR`，统一管理端口生命周期（清理/disconnect 兜底）。
 - `background/index.ts` → `PortListener.ts`：收到 `START` 先打断同端口上一会话，再 `startStreamTranslation`；端口断开时 `abort()` 中止在途请求。
 - `StreamTranslator.ts`：读 storage 配置 → `prompt.buildSystemPrompt`（注入网页元数据 + 段对齐规则）→ `@nickyzj2023/ai` 的 `stream`（内部即 fetcher + parseSSE）流式请求，`AbortSignal` 经 options 传入、打断时立即硬中止，逐 chunk `postMessage(CHUNK)`。
 
 ### 阶段四：流式写回原文 + 断点重试
-- background 逐 chunk 发 `CHUNK` → `streamTranslate.ts` → `onChunk` → `InlineTranslator.appendChunk`：
-  - `SegmentStreamParser.push` 累积 buffer，按 `{{segN}}` 拆段，对每个完整段回调 `onSegment(segment, segmentNumber)`；
-  - **序号对齐检测**：第 `currentNodeIndex` 个输出段应结束于 `{{seg(currentNodeIndex+1)}}`，序号不符说明模型在之前发生了拆/并段错位 → 立即 `onMisalign(错位段)` 触发断点重试；
-  - 序号正确 → `writeToSegment` **删除占位符后**写回对应 span 锚点（preserve 段保持原文）。
-- 收到 `DONE` → `finish()`：flush 缓冲、段数兜底（模型输出段数 < 期望段数即视为末尾吞段，返回错位段重试）、unwrap 锚点恢复 DOM（译文直接替换原文，无样式标记）。
-- `ERROR` / 异常断开 → `destroy()`：**回滚原文**、移除锚点与样式。
 
-**断点重试（错位恢复）**：
-- `TranslationSession.handleMisalign(fromSegment)`：达到 `MAX_ATTEMPTS`（默认 5）则回滚原文放弃；否则 `abort` 旧流 + `runStream(translator.restart(fromSegment))`。
-- `InlineTranslator.restart(fromSegment)`：恢复错位段及之后锚点的原文（前半段已写回的译文保留不动）、重建解析器、按**绝对序号**重新拼接"从错位段起的协议子文本"返回。
+> 协议解析与对齐状态都在 `TranslationSession`（一次会话的事）；`InlineTranslator`
+> 只剩「按段写/恢复」的纯 DOM 方法，会话单向往下调，不再互相注入回调。
+
+- background 逐 chunk 发 `CHUNK` → `streamTranslate.ts` → `onChunk` → 会话持有的 `SegmentStreamParser.push`：
+  - `push` 累积 buffer，按 `{{segN}}` 拆段，对每个完整段回调 `onSegment(segment, segmentNumber)`；
+  - **序号对齐检测**：第 `cursor` 个输出段应结束于 `{{seg(cursor+1)}}`，序号不符说明模型在之前发生了拆/并段错位 → 立即 `handleMisalign(cursor)` 触发断点重试；
+  - 序号正确 → **删除占位符后** `translator.writeSegment(cursor, 译文)` 写回对应 span 锚点（preserve 段保持原文）。
+- 收到 `DONE` → 会话 flush 缓冲、段数兜底（模型输出段数 < 期望段数即视为末尾吞段，从 `cursor` 起续译）；对齐则 `translator.finish()` unwrap 锚点恢复 DOM（译文直接替换原文，无样式标记）。
+- `ERROR` / 异常断开 → `translator.destroy()`：**回滚原文**、移除锚点与样式。
+
+**断点重试（错位恢复）**：全收在 `TranslationSession.handleMisalign(fromSegment)` 里：
+- 达到 `MAX_ATTEMPTS`（默认 5）则回滚原文放弃；否则 `abort` 旧流；
+- 逐段 `translator.restoreSegment(i)` 把错位段及之后的锚点恢复成原文（前半段已写回的译文保留不动），再把 `cursor` 挪回错位段、重建解析器；
+- 用 `joinSegmentRows(rows.slice(fromSegment), fromSegment)` 按**绝对序号**拼出"从错位段起的协议子文本"重新发起。
 - 为什么能精确定位错位段：`{{segN}}` 序号是**每段都有的地标**，长文多段纯文本之间即使没有 `{{varN}}` 占位符，也能靠序号判断"从哪一段开始错位"，从而只重译后半段、节省 token 并随错位段前进而收敛。
 
 ## 5. 协议与共享边界
@@ -101,15 +106,16 @@
 | 端口名 `stream-translate` | `types/messages.ts` | 两端一致 |
 
 > ⚠️ 模型侧契约在 `background/prompt.ts`（提示词文案与示例），它引用 protocol.ts 的
-> 标记常量。改动分段构造（`segmentPlan.ts`）、写回（`InlineTranslator.ts`）或标记
+> 标记常量。改动分段构造（`segmentPlan.ts`）、写回与对齐（`InlineTranslator.ts` /
+> `TranslationSession.ts`）或标记
 > 形态时，必须确认 prompt 侧仍在描述同一个协议（详见 AGENTS.md"最容易踩的坑"）。
 
 ## 6. 阅读建议（给新人）
 
 想理解"点击翻译按钮后发生了什么"，按这个顺序读：
 
-1. `content/index.ts` —— 看交互入口与事件转发；
+1. `content/index.ts` —— 看交互入口、事件转发与活跃会话的持有；
 2. **`content/TranslationSession.ts`** —— 看一次会话的编排与断点重试；
-3. **`InlineTranslator.ts`** —— 看段目标如何建立、译文如何写回 DOM、错位如何重启；编号规则看 `segmentPlan.ts`、DOM 操作看 `domAnchor.ts`；
+3. **`InlineTranslator.ts`** —— 看段锚点如何建立、译文如何按段写回 DOM；编号规则看 `segmentPlan.ts`、DOM 操作看 `domAnchor.ts`；
 4. `utils/protocol.ts` + `types/messages.ts` —— 看协议常量与消息契约；
 5. `background/prompt.ts` + `background/StreamTranslator.ts` —— 看模型侧契约与 LLM 调用。
