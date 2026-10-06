@@ -4,9 +4,9 @@ import { collapseNewlines, planSegments } from "../app/content/segmentPlan";
 /**
  * 段计划（纯逻辑）的单测。
  *
- * 为什么测这些：占位符编号是模型必须原样照抄的地标，编号顺序错一个就会让译文
- * 静默写错位置——而它跨段全局递增、preserve 段与 before/after 都要参与分配，
- * 是最容易写漂的部分。这里把编号规则钉死，拆分/重构 InlineTranslator 时用它兜底。
+ * 为什么测这些：协议行怎么拼决定了模型看到什么，拼错了不会报错、只会静默变形
+ * （占位符漏放会让未选中内容被当译文翻掉），是最容易写漂的部分。这里把规则钉死，
+ * 拆分/重构 InlineTranslator 时用它兜底。
  */
 
 describe("collapseNewlines", () => {
@@ -24,38 +24,34 @@ describe("planSegments", () => {
 		const plans = planSegments([
 			{ preserve: false, selected: "译文", before: "前", after: "后" },
 		]);
-		expect(plans[0].row).toBe("{{var1}}译文{{var2}}");
+		expect(plans[0].row).toBe("{{var}}译文{{var}}");
 		expect(plans[0].originalText).toBe("译文");
 	});
 
-	it("before/after 为空时不分配占位符（避免噪音）", () => {
+	it("before/after 为空时不插占位符（避免噪音）", () => {
 		const plans = planSegments([
 			{ preserve: false, selected: "x", before: "", after: "" },
 		]);
 		expect(plans[0].row).toBe("x");
 	});
 
-	it("preserve 段整块只占一个占位符，且编号不重置", () => {
+	it("preserve 段整块只占一个占位符", () => {
 		const plans = planSegments([
 			{ preserve: true, selected: "", before: "", after: "" },
 			{ preserve: false, selected: "译文", before: "", after: "" },
 		]);
 		expect(plans[0].kind).toBe("preserve");
-		expect(plans[0].row).toBe("{{var1}}");
+		expect(plans[0].row).toBe("{{var}}");
 		expect(plans[1].row).toBe("译文");
 	});
 
-	it("preserve 与普通段混合时编号全局连续", () => {
+	it("preserve 与普通段混合时占位符形态一致", () => {
 		const plans = planSegments([
 			{ preserve: false, selected: "a", before: "x", after: "" },
 			{ preserve: true, selected: "", before: "", after: "" },
 			{ preserve: false, selected: "b", before: "", after: "y" },
 		]);
-		expect(plans.map((p) => p.row)).toEqual([
-			"{{var1}}a",
-			"{{var2}}",
-			"b{{var3}}",
-		]);
+		expect(plans.map((p) => p.row)).toEqual(["{{var}}a", "{{var}}", "b{{var}}"]);
 	});
 
 	it("协议行折叠换行，但 originalText 保留原始换行", () => {

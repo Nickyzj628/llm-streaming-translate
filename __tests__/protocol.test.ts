@@ -2,7 +2,7 @@ import { describe, expect, it } from "@rstest/core";
 import {
 	extractTranslatedContent,
 	joinSegmentRows,
-	placeholderMarker,
+	PLACEHOLDER_TOKEN,
 	SegmentStreamParser,
 	segmentSeparator,
 } from "../app/utils/protocol";
@@ -21,9 +21,8 @@ describe("协议标记形态", () => {
 		expect(segmentSeparator(12)).toBe("{{seg12}}");
 	});
 
-	it("占位符与段标记由同一份标记常量派生", () => {
-		expect(placeholderMarker(1)).toBe("{{var1}}");
-		expect(placeholderMarker(9)).toBe("{{var9}}");
+	it("占位符是不带编号的固定标记", () => {
+		expect(PLACEHOLDER_TOKEN).toBe("{{var}}");
 	});
 });
 
@@ -39,7 +38,11 @@ describe("joinSegmentRows", () => {
 
 describe("extractTranslatedContent", () => {
 	it("删除占位符并清理首尾空白", () => {
-		expect(extractTranslatedContent("{{var1}}译文 {{var2}}")).toBe("译文");
+		expect(extractTranslatedContent("{{var}}译文 {{var}}")).toBe("译文");
+	});
+
+	it("模型自作聪明给占位符加了编号也能删掉", () => {
+		expect(extractTranslatedContent("{{var1}}译文{{var7}}")).toBe("译文");
 	});
 
 	it("段内换行保留（{{segN}} 方案允许段内自由换行）", () => {
@@ -70,7 +73,7 @@ describe("SegmentStreamParser", () => {
 		expect(partials).toEqual([]);
 	});
 
-	it("标记被 chunk 切开时不把残缺前缀写进译文", () => {
+	it("分隔标记被 chunk 切开时不把残缺前缀写进译文", () => {
 		const { parser, full, partials } = collect();
 		parser.push("甲{{seg");
 		// 未完成前缀 {{seg 被剥离，只剩"甲"作为尾段预览
@@ -80,6 +83,15 @@ describe("SegmentStreamParser", () => {
 			["甲", 1],
 			["乙", 2],
 		]);
+	});
+
+	it("占位符被 chunk 切开时同样不写进译文", () => {
+		const { parser, full, partials } = collect();
+		parser.push("甲{{va");
+		expect(partials).toEqual(["甲"]);
+		parser.push("r}}乙{{seg1}}");
+		// 占位符本身由会话层删掉，这里只要求它别被当残渣留在段首
+		expect(full).toEqual([["甲{{var}}乙", 1]]);
 	});
 
 	it("空段也回调，以消耗段下标保持后续对齐", () => {

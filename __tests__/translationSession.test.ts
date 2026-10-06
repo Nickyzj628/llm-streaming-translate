@@ -144,10 +144,10 @@ describe("正常流", () => {
 		expect(ended).toBe(1);
 	});
 
-	it("写回前在会话层删掉 {{varN}} 占位符", () => {
+	it("写回前在会话层删掉 {{var}} 占位符", () => {
 		const s = startSession(["x"]);
 
-		s.streams[0].options.onChunk("译文{{var1}}{{seg1}}");
+		s.streams[0].options.onChunk("译文{{var}}{{seg1}}");
 		expect(s.written).toEqual([{ index: 0, text: "译文" }]);
 	});
 

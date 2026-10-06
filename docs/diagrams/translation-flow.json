@@ -68,7 +68,7 @@
       "type": "frontend",
       "label": "分段与锚点",
       "sublabel": "每文本节点一段，pre/code 整段",
-      "tag": "{{segN}}/{{varN}} 协议",
+      "tag": "{{segN}}/{{var}} 协议",
       "width": 124
     },
     {
@@ -188,8 +188,8 @@
       "dot": "cyan",
       "title": "段对齐协议（核心约定）",
       "items": [
-        "每个文本节点 = 一段，段间用带绝对序号的 {{segN}} 分隔（含最后一段）；不译内容与 pre/code 整块替换为 {{varN}} 占位",
-        "标记形态（{{segN}}/{{varN}}）唯一定义在 utils/protocol.ts：content 构造、流式解析与 prompt 说明全部由它派生"
+        "每个文本节点 = 一段，段间用带绝对序号的 {{segN}} 分隔（含最后一段）；不译内容与 pre/code 整块替换为固定占位符 {{var}}",
+        "标记形态（{{segN}}/{{var}}）唯一定义在 utils/protocol.ts：content 构造、流式解析、正则与 prompt 说明全部由它派生"
       ]
     },
     {

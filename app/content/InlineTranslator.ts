@@ -30,7 +30,7 @@ type SegmentTarget =
 	| {
 			kind: "translate";
 			target: HTMLSpanElement;
-			/** 该段的协议行（含 {{varN}} 占位符） */
+			/** 该段的协议行（含 {{var}} 占位符） */
 			row: string;
 			/**
 			 * 选中部分原文。保留原始换行：回滚（destroy）时必须逐字恢复原文，
@@ -94,7 +94,7 @@ function buildSegments(range: Range): SegmentTarget[] {
 		});
 	}
 
-	// 段计划：占位符编号与协议行（纯逻辑，见 segmentPlan.ts）
+	// 段计划：协议行怎么拼（纯逻辑，见 segmentPlan.ts）
 	const plans = planSegments(inputs);
 
 	// 建立 DOM 锚点。plans 与 sources 同源同序，故用 sources 判别锚点类型
@@ -126,7 +126,7 @@ export interface InlineTranslatorController {
 	/** 段数（普通文本节点段 + preserve 块段），上层据此判断要不要发起请求 */
 	readonly segmentCount: number;
 	/**
-	 * 各段的协议行（含 {{varN}} 占位符，不含 {{segN}}）。段序号由上层用
+	 * 各段的协议行（含 {{var}} 占位符，不含 {{segN}}）。段序号由上层用
 	 * joinSegmentRows 统一拼，保证绝对递增；重试时上层拿它切片重拼子文本。
 	 */
 	getRows: () => string[];

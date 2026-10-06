@@ -3,31 +3,31 @@
  *
  * 协议约定（两端必须同步，改动前先读 AGENTS.md 的"最容易踩的坑"）：
  * - content 端（TranslationSession.ts 拼协议文本、InlineTranslator.ts 建段锚点）
- *   构造输入：每个文本节点 = 一段，每段后跟
- *   带序号的段分隔标记 {{segN}}（N 为绝对段序号，从 1 递增，最后一段也必须带）；
- *   "不译内容"（未选中部分 / pre/code 等 preserve 节点）统一替换为占位符
- *   {{var1}}、{{var2}}...（编号全局递增），模型只需原样照抄标记，无需理解任何标签结构；
- * - 模型输出：照抄每段的 {{segN}} 与段内 {{varN}}，只翻译其余内容；
+ *   构造输入：每个文本节点 = 一段，每段后跟带序号的段分隔标记 {{segN}}（N 为绝对
+ *   段序号，从 1 递增，最后一段也必须带）；"不译内容"（未选中部分 / pre/code 等
+ *   preserve 节点）统一换成固定占位符 {{var}}，模型只需原样照抄标记，
+ *   无需理解任何标签结构；
+ * - 模型输出：照抄每段的 {{segN}} 与段内 {{var}}，只翻译其余内容；
  * - 写回：删掉占位符得到纯译文写入选中锚点；未选中部分由 DOM 原文兜底。
  *
- * 为什么用带序号的 {{segN}} 而不是固定 {{seg}}：长文多段纯文本之间没有占位符，
- * 固定分隔符无法在流式阶段判断"模型在哪一段开始拆/并段错位"，只能全文重译。
- * 序号让"第 i 个输出段结束于 {{segi}}"成为每段都有的地标，content 端据此精确
- * 定位错位段并只重译后半段（断点重试），详见 TranslationSession.ts 的注释。
+ * 为什么段标记带序号而占位符不带：段序号是"第 i 段结束于 {{segi}}"这个每段都有的
+ * 地标，content 端据此在流式阶段判断模型有没有拆/并段错位，进而只重译后半段
+ * （断点重试，详见 TranslationSession.ts 的注释）。占位符只管"这里有不译内容"，
+ * 写回时整类删掉、从不按编号对应，所以编号是多余的。
  *
  * 本模块由 content 端（TranslationSession.ts）解析、拼接与写回使用。
  */
 
 /**
- * 协议标记的形态（{{segN}} / {{varN}}）。这里是标记形态的唯一来源：
- * 拼接函数、说明形态（*_LABEL）、下面几个正则与 prompt 说明（app/background/prompt.ts）
- * 全由这几个常量派生，改形态只动这里。
+ * 协议标记的形态（{{segN}} / {{var}}）。这里是标记形态的唯一来源：
+ * 拼接函数、说明形态（*_LABEL / *_TOKEN）、下面几个正则与 prompt 说明
+ * （app/background/prompt.ts）全由这几个常量派生，改形态只动这里。
  */
 const MARKER_PREFIX = "{{";
 const MARKER_SUFFIX = "}}";
 /** 段分隔标记名：{{segN}} 的 seg */
 export const SEGMENT_MARKER = "seg";
-/** 占位符标记名：{{varN}} 的 var */
+/** 占位符标记名：{{var}} 的 var */
 export const PLACEHOLDER_MARKER = "var";
 
 /** 转义正则元字符。标记是拼进正则的，{ 这类字符在 u 模式下不转义直接语法错误 */
@@ -38,6 +38,7 @@ function escapeRegExp(text: string): string {
 /**
  * 把标记名展开成"所有非空前缀"的正则片段（末位允许跟数字）：
  * seg → s(?:e(?:g\d*)?)，能匹配 {{ / {{s / {{se / {{seg / {{seg12 这些半成品。
+ * 末位的 \d* 对没有编号的 {{var}} 是宽容：模型手滑写成 {{var1 也认。
  */
 function partialMarkerPattern(name: string): string {
 	let pattern = "";
@@ -50,12 +51,15 @@ function partialMarkerPattern(name: string): string {
 
 /** 段分隔标记的说明形态 {{segN}}（N 为待填序号的占位）：prompt 说明用 */
 export const SEGMENT_MARKER_LABEL = `${MARKER_PREFIX}${SEGMENT_MARKER}N${MARKER_SUFFIX}`;
-/** 占位符的说明形态 {{varN}}：prompt 说明用 */
-export const PLACEHOLDER_MARKER_LABEL = `${MARKER_PREFIX}${PLACEHOLDER_MARKER}N${MARKER_SUFFIX}`;
+/**
+ * 不译内容占位符的固定形态 {{var}}。prompt 说明与实际拼接共用这一个字面；
+ * 不带编号，见文件头的说明。
+ */
+export const PLACEHOLDER_TOKEN = `${MARKER_PREFIX}${PLACEHOLDER_MARKER}${MARKER_SUFFIX}`;
 
-/** 匹配完整的占位符 {{varN}}（N 为不译片段编号，全局递增） */
+/** 匹配不译内容占位符 {{var}}（\d* 是宽容：模型多写了编号的 {{var1}} 也认） */
 const PLACEHOLDER_RE = new RegExp(
-	`${escapeRegExp(MARKER_PREFIX)}${PLACEHOLDER_MARKER}\\d+${escapeRegExp(MARKER_SUFFIX)}`,
+	`${escapeRegExp(MARKER_PREFIX)}${PLACEHOLDER_MARKER}\\d*${escapeRegExp(MARKER_SUFFIX)}`,
 	"g",
 );
 
@@ -74,14 +78,6 @@ export function segmentSeparator(segmentNumber: number): string {
 }
 
 /**
- * 生成带序号的占位符（如 {{var1}}，N 为不译片段编号，全局递增）。
- * content 端（segmentPlan.ts）构造协议行与 prompt 示例共用。
- */
-export function placeholderMarker(index: number): string {
-	return `${MARKER_PREFIX}${PLACEHOLDER_MARKER}${index}${MARKER_SUFFIX}`;
-}
-
-/**
  * 把协议行按绝对段序号拼接成完整协议文本。
  * 每段（含最后一段）后跟 {{segN}} 分隔标记，N = startIndex + i + 1（绝对段序号，1 起）。
  * content 端（TranslationSession）使用：
@@ -97,14 +93,14 @@ export function joinSegmentRows(rows: string[], startIndex = 0): string {
 }
 
 /**
- * 流式解析时，协议标记（{{segN}} 分隔符 / {{varN}} 占位符）可能被模型拆成多个
+ * 流式解析时，协议标记（{{segN}} 分隔符 / {{var}} 占位符）可能被模型拆成多个
  * chunk 到达（如先到 "{{seg" 再到 "1}}"），buffer 尾部会残留一个"正在形成的标记前缀"。
  * 此时 split 正则无法识别它，会把它当成译文写进锚点，页面残留脏字符。
  *
  * 该函数剥离"恰好是某个协议标记未完成前缀"的段尾。单个正则覆盖两类标记的
- * 全部截断前缀，且按最长匹配贪心剥离（{{segN}} 与 {{varN}} 的头两个字符相同）：
+ * 全部截断前缀，且按最长匹配贪心剥离（{{segN}} 与 {{var}} 的头两个字符相同）：
  *   {{segN}} 的前缀： {{ / {{s / {{se / {{seg / {{seg + 任意数字
- *   {{varN}}  的前缀： {{ / {{v / {{va / {{var / {{var + 任意数字
+ *   {{var}}  的前缀： {{ / {{v / {{va / {{var / {{var + 任意数字
  * 完整分隔符会被 split 识别、完整占位符由 extractTranslatedContent 删除，
  * 二者都不会以"前缀"形态出现在段尾，因此不会误删真实译文。
  * 与 content 端（TranslationSession.ts）的流式写回共用。
@@ -121,7 +117,7 @@ function stripIncompleteSegmentPrefix(text: string): string {
 }
 
 /**
- * 从模型输出的一段中提取"译文"：删除占位符 {{varN}}（对应当前段内的不译内容）。返回纯译文。
+ * 从模型输出的一段中提取"译文"：删除占位符 {{var}}（对应当前段内的不译内容）。返回纯译文。
  * - 占位符（未选中部分 / code 等）由 DOM 原文兜底，写回选中锚点时丢弃；
  * - 段内可能含换行（{{segN}} 分隔方案允许），保留换行，仅清理首尾空白。
  */

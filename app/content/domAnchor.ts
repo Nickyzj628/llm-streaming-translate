@@ -1,7 +1,7 @@
 /**
  * 划词翻译的 DOM 锚点层：选区遍历、锚点包裹与恢复。
  *
- * 只做 DOM 操作，不做"哪一段该翻译、占位符怎么编号"的决策——那些在
+ * 只做 DOM 操作，不做"哪一段该翻译、占位符放在哪"的决策——那些在
  * segmentPlan.ts（纯逻辑、可单测）。拆开后 DOM 层只关心"怎么改页面"，
  * 计划层只关心"发什么给模型"，两边可以各自推理、各自验证。
  */
@@ -11,7 +11,7 @@ const SELECTED_CLASS = "llm-selected";
 
 /**
  * 不翻译但须原样保留的元素标签名集合。
- * 这些元素（代码块等）的文本不发送给模型，整块只以一个 {{varN}} 占位符替代；
+ * 这些元素（代码块等）的文本不发送给模型，整块只以一个 {{var}} 占位符替代；
  * 写回时由 DOM 原文兜底，模型无需也没必要照抄内容。
  */
 const PRESERVE_TAGS = new Set(["pre", "code", "kbd", "samp", "var"]);
@@ -31,8 +31,8 @@ export interface CollectedTextNode {
  *
  * 为什么取"最外层"：代码高亮块常见 pre > code > span.line > span.token 的
  * 深层结构，块内可能有几十个文本节点。如果按文本节点逐段占位，用户提示词会被
- * 刷成 {{seg1}}{{var2}}{{seg2}}{{var3}}... 的长链。整块折叠为一段、只占一个
- * {{varN}}，既减少 prompt 噪音，也减少模型数错段数的概率。
+ * 刷成 {{seg1}}{{var}}{{seg2}}{{var}}... 的长链。整块折叠为一段、只占一个
+ * {{var}}，既减少 prompt 噪音，也减少模型数错段数的概率。
  */
 export function findPreserveRoot(node: Node): Element | null {
 	let root: Element | null = null;

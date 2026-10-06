@@ -1,4 +1,4 @@
-import { placeholderMarker } from "@/utils/protocol";
+import { PLACEHOLDER_TOKEN } from "@/utils/protocol";
 
 /**
  * 段计划的输入：一个段目标的原始文本切分。
@@ -20,7 +20,7 @@ export interface SegmentInput {
 export interface PlannedSegment {
 	kind: "translate" | "preserve";
 	/**
-	 * 发给模型的协议行（含 {{varN}} 占位符，不含 {{segN}}——段序号由
+	 * 发给模型的协议行（含 {{var}} 占位符，不含 {{segN}}——段序号由
 	 * joinSegmentRows 统一拼，保证绝对递增）
 	 */
 	row: string;
@@ -40,32 +40,29 @@ export function collapseNewlines(text: string): string {
 }
 
 /**
- * 把各段的文本切分转成段计划（占位符编号 + 协议行）。
+ * 把各段的文本切分转成段计划（协议行）。
  *
- * 为什么做成纯函数：占位符编号是模型必须原样照抄的地标，编号顺序错一个就会让
- * 写回整体错位（且不会报错）。这段规则与 DOM 无关，独立出来才能单测。
+ * 为什么做成纯函数：协议行怎么拼决定了模型看到什么，拼错了不会报错、只会静默
+ * 变形（比如占位符漏放导致未选中内容被当译文翻掉），所以独立出来单测钉住。
  *
- * 编号规则（{{var1}}、{{var2}}... 全局递增，跨段不重置）：
- * - preserve 段：整块只占一个；
- * - 普通段：before / after 各占一个，为空则省略（避免噪音）。
+ * 行内规则：
+ * - preserve 段：整块换成一个占位符，块内文本一个字都不发给模型；
+ * - 普通段：before / after 各自换成占位符（为空则省略，避免噪音），
+ *   中间夹着待翻译的选中文本。
  */
 export function planSegments(inputs: SegmentInput[]): PlannedSegment[] {
-	let placeholderIndex = 1;
-	const nextPlaceholder = (): string => placeholderMarker(placeholderIndex++);
-
 	return inputs.map((input): PlannedSegment => {
 		if (input.preserve) {
-			return { kind: "preserve", row: nextPlaceholder(), originalText: "" };
+			return { kind: "preserve", row: PLACEHOLDER_TOKEN, originalText: "" };
 		}
 		const before = collapseNewlines(input.before);
 		const after = collapseNewlines(input.after);
 		return {
 			kind: "translate",
-			// 求值顺序从左到右：before 先拿号、after 后拿号
 			row:
-				(before ? nextPlaceholder() : "") +
+				(before ? PLACEHOLDER_TOKEN : "") +
 				collapseNewlines(input.selected) +
-				(after ? nextPlaceholder() : ""),
+				(after ? PLACEHOLDER_TOKEN : ""),
 			originalText: input.selected,
 		};
 	});

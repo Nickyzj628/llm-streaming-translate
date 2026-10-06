@@ -8,7 +8,7 @@
 
 用户在网页上划词，content 端把**选中的每个文本节点当作一段**、每段后跟带序号的
 `{{segN}}` 分隔标记（含最后一段，N 为绝对段序号）、不译内容（未选中部分 / pre/code）
-用 `{{varN}}` 占位符替代，拼成一段协议文本经长连接端口发给 background，background
+用 `{{var}}` 占位符替代，拼成一段协议文本经长连接端口发给 background，background
 流式调用 LLM 后逐 chunk 回传，content 端再按 `{{segN}}` 的序号逐段「删除占位符」把
 译文写回对应的锚点 span，实现原地流式替换。若模型发生拆/并段错位，还能**精确定位
 错位段并从该段起重译（断点重试）**，而不是全文重译。
@@ -34,11 +34,11 @@
 | `app/content/index.ts` | content 入口、事件编排、活跃会话持有 | 事件转发 + start/abort 两个动作，点击后流程的阅读入口 |
 | `app/content/TranslationSession.ts` | 一次会话的编排 | 协议文本拼接、流式解析写回、错位重试、收尾/放弃都在这；端口客户端由入口注入（纯逻辑可单测） |
 | `app/content/InlineTranslator.ts` | 段锚点建立 + 按段写回 | 编排"收集 → 计划 → 锚点"，对外只给段数/协议行与 writeSegment/restoreSegment/finish/destroy |
-| `app/content/segmentPlan.ts` | 段计划纯逻辑 | 占位符编号与协议行拼接（与 DOM 解耦，有单测） |
+| `app/content/segmentPlan.ts` | 段计划纯逻辑 | 协议行怎么拼（哪里插 `{{var}}`，与 DOM 解耦，有单测） |
 | `app/content/domAnchor.ts` | DOM 锚点层 | 选区遍历、锚点包裹与恢复（只做 DOM，不做决策） |
 | `app/content/FloatingButton.ts` | 浮动按钮的 DOM/样式/点击回传 | 纯 UI，无业务逻辑 |
 | `app/utils/streamTranslate.ts` | 端口客户端（content 端使用） | 统一管理端口生命周期，回调给消费方 |
-| `app/utils/protocol.ts` | 段分隔/占位符/流式解析 | **标记形态的唯一来源**，content 构造、解析与 prompt 说明都由它派生 |
+| `app/utils/protocol.ts` | 段分隔/占位符/流式解析 | **标记形态的唯一来源**，content 构造、解析、正则与 prompt 说明都由它派生 |
 | `app/background/index.ts` | background 入口、端口监听 | 收到连接转发给 PortListener |
 | `app/background/PortListener.ts` | 端口级生命周期 | 重复 START 打断、断开中止 |
 | `app/background/prompt.ts` | 模型侧协议契约 | system prompt（规则 + 成功/失败示例），标记由 protocol.ts 派生 |
@@ -56,7 +56,7 @@
 - `index.ts` 的 `startTranslation(range)`：先打断旧会话，再 `createInlineTranslator(range)`。
 - `InlineTranslator.buildSegments(range)` 分三步：
   - `domAnchor.collectTextNodes(range)`：`TreeWalker` 遍历选区，收集相交文本节点及其选中范围与所属 preserve 块。**只收集、不改 DOM**——TreeWalker 是 live 的，先改会让遍历位置漂移；
-  - `segmentPlan.planSegments(inputs)`：纯逻辑产出**段计划**（占位符编号 + 协议行）。preserve 块整块折叠为一段（同一块内后续节点跳过），普通节点 before/after 各占一个占位符（为空则省略）；协议行内的连续换行折叠为空格，而 `originalText` 保留原始换行（回滚要逐字恢复）；
+  - `segmentPlan.planSegments(inputs)`：纯逻辑产出**段计划**（协议行）。preserve 块整块折叠为一段（同一块内后续节点跳过），普通节点 before/after 各换成一个 `{{var}}`（为空则省略）；协议行内的连续换行折叠为空格，而 `originalText` 保留原始换行（回滚要逐字恢复）；
   - 回到 DOM 层建立锚点：普通节点包 `<span class="llm-selected">`（只包选中部分），preserve 块包整个最外层元素。协议行直接存在段目标里（不再用平行数组靠下标对应）。
 - `translator.getRows()` 给会话：协议文本由会话用 `joinSegmentRows(rows, 0)` 拼出，每段后跟 `{{segN}}`。
 
@@ -83,32 +83,31 @@
 - 达到 `MAX_ATTEMPTS`（默认 5）则回滚原文放弃；否则 `abort` 旧流；
 - 逐段 `translator.restoreSegment(i)` 把错位段及之后的锚点恢复成原文（前半段已写回的译文保留不动），再把 `cursor` 挪回错位段、重建解析器；
 - 用 `joinSegmentRows(rows.slice(fromSegment), fromSegment)` 按**绝对序号**拼出"从错位段起的协议子文本"重新发起。
-- 为什么能精确定位错位段：`{{segN}}` 序号是**每段都有的地标**，长文多段纯文本之间即使没有 `{{varN}}` 占位符，也能靠序号判断"从哪一段开始错位"，从而只重译后半段、节省 token 并随错位段前进而收敛。
+- 为什么能精确定位错位段：`{{segN}}` 序号是**每段都有的地标**，长文多段纯文本之间即使没有 `{{var}}` 占位符，也能靠序号判断"从哪一段开始错位"，从而只重译后半段、节省 token 并随错位段前进而收敛。
 
 ## 5. 协议与共享边界
 
 > **标记形态的唯一来源是 `app/utils/protocol.ts`**：`MARKER_PREFIX`/`MARKER_SUFFIX`
-> 与 `SEGMENT_MARKER`/`PLACEHOLDER_MARKER` 常量派生出拼接函数、说明形态（`*_LABEL`）
-> 与 prompt 示例。改标记形态只需动那几行；与字面字符强耦合的只有拆段正则与截断
-> 前缀正则，需一并手改。
+> 与 `SEGMENT_MARKER`/`PLACEHOLDER_MARKER` 常量派生出拼接函数、`{{var}}` 字面、
+> 三个正则与 prompt 示例。改标记形态只需动那几行——正则也是拼出来的，不用手改。
 
 | 协议 | 定义处 | 说明 |
 |---|---|---|
-| 标记常量 `SEGMENT_MARKER` / `PLACEHOLDER_MARKER` | `utils/protocol.ts` | 标记名与前后缀的唯一来源，拼接函数与 prompt 说明都由它派生 |
-| `segmentSeparator(n)` → `{{segN}}` | `utils/protocol.ts` | 段分隔标记，N 为绝对段序号（1 起），每段含最后一段都带 |
-| `placeholderMarker(n)` → `{{varN}}` | `utils/protocol.ts` | 不译内容占位，模型照抄，写回时删除 |
+| 标记常量 `SEGMENT_MARKER` / `PLACEHOLDER_MARKER` | `utils/protocol.ts` | 标记名与前后缀的唯一来源，拼接函数、正则与 prompt 说明都由它派生 |
+| `segmentSeparator(n)` → `{{segN}}` | `utils/protocol.ts` | 段分隔标记，N 为绝对段序号（1 起），每段含最后一段都带——对齐检测与断点重试的地标 |
+| `PLACEHOLDER_TOKEN` → `{{var}}` | `utils/protocol.ts` | 不译内容占位，固定形态不带编号；模型照抄，写回时整类删除 |
 | `joinSegmentRows(rows, startIndex)` | `utils/protocol.ts` | 按绝对序号拼接协议行（初始 startIndex=0；断点重试 startIndex=fromSegment） |
-| 未完成前缀剥离 | `utils/protocol.ts` | `stripIncompleteSegmentPrefix`（模块内）剥离流式中未完成的标记前缀（如 `{{seg`/`{{s`/`{{va`/`{{var1`） |
+| 未完成前缀剥离 | `utils/protocol.ts` | `stripIncompleteSegmentPrefix`（模块内）剥离流式中未完成的标记前缀（如 `{{seg`/`{{s`/`{{va`/`{{var`） |
 | `SegmentStreamParser` | `utils/protocol.ts` | 段流解析器（`{{segN}}` 拆分 / 空段对齐 / 前缀剥离），`onSegment` 回调带序号 |
 | `extractTranslatedContent` | `utils/protocol.ts` | 删除占位符得到纯译文 |
-| 段计划编号规则 | `content/segmentPlan.ts` | 占位符全局递增的分配顺序（preserve 一段 / before / after），有单测钉住 |
+| 段计划拼行规则 | `content/segmentPlan.ts` | 每行哪里插 `{{var}}`（preserve 整块一个 / before / after 为空则省略），有单测钉住 |
 | 端口消息协议 | `types/messages.ts` | START/CHUNK/DONE/ERROR，content + background 两端一致 |
 | 端口名 `stream-translate` | `types/messages.ts` | 两端一致 |
 
 > ⚠️ 模型侧契约在 `background/prompt.ts`（提示词文案与示例），它引用 protocol.ts 的
 > 标记常量。改动分段构造（`segmentPlan.ts`）、写回与对齐（`InlineTranslator.ts` /
-> `TranslationSession.ts`）或标记
-> 形态时，必须确认 prompt 侧仍在描述同一个协议（详见 AGENTS.md"最容易踩的坑"）。
+> `TranslationSession.ts`）或标记形态时，必须确认 prompt 侧仍在描述同一个协议
+> （详见 AGENTS.md"最容易踩的坑"）。
 
 ## 6. 阅读建议（给新人）
 
@@ -116,6 +115,6 @@
 
 1. `content/index.ts` —— 看交互入口、事件转发与活跃会话的持有；
 2. **`content/TranslationSession.ts`** —— 看一次会话的编排与断点重试；
-3. **`InlineTranslator.ts`** —— 看段锚点如何建立、译文如何按段写回 DOM；编号规则看 `segmentPlan.ts`、DOM 操作看 `domAnchor.ts`；
+3. **`InlineTranslator.ts`** —— 看段锚点如何建立、译文如何按段写回 DOM；协议行看 `segmentPlan.ts`、DOM 操作看 `domAnchor.ts`；
 4. `utils/protocol.ts` + `types/messages.ts` —— 看协议常量与消息契约；
 5. `background/prompt.ts` + `background/StreamTranslator.ts` —— 看模型侧契约与 LLM 调用。

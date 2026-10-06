@@ -97,7 +97,7 @@ export function startTranslationSession(options: {
 	 * 段流解析器的消费逻辑：第 cursor 个输出段应结束于 {{seg(cursor+1)}}。
 	 * 序号不符说明模型在这之前拆/并段错位了，立即回调重试；后续段不再消费，
 	 * 避免错误译文以 written=true 残留。这是"断点重试"能精确定位错位段的关键——
-	 * 长文纯文本段之间没有 {{varN}} 占位符，序号是唯一可靠的地标。
+	 * 长文纯文本段之间没有 {{var}} 占位符，序号是唯一可靠的地标。
 	 */
 	function makeParser(): SegmentStreamParser {
 		return new SegmentStreamParser({
@@ -107,7 +107,7 @@ export function startTranslationSession(options: {
 					handleMisalign(cursor);
 					return;
 				}
-				// 删除占位符 {{varN}} 得到纯译文再写回；未选中部分由 DOM 原文兜底，
+				// 删除占位符 {{var}} 得到纯译文再写回；未选中部分由 DOM 原文兜底，
 				// 上下文保真不依赖模型
 				translator.writeSegment(cursor, extractTranslatedContent(segment));
 				cursor++;

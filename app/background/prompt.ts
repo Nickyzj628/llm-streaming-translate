@@ -1,6 +1,5 @@
 import {
-	PLACEHOLDER_MARKER_LABEL,
-	placeholderMarker,
+	PLACEHOLDER_TOKEN,
 	SEGMENT_MARKER_LABEL,
 	segmentSeparator,
 } from "@/utils/protocol";
@@ -19,34 +18,33 @@ export function buildSystemPrompt(
 	pageMeta: { title: string; description: string } | undefined,
 	targetLang: string,
 ): string {
-	// 示例中带具体序号的标记同样由协议模块生成，避免示例与实际形态漂移
+	// 示例里的标记同样由协议模块生成，避免示例与实际形态漂移
 	const seg1 = segmentSeparator(1);
 	const seg2 = segmentSeparator(2);
-	const seg3 = segmentSeparator(3);
-	const var1 = placeholderMarker(1);
+	const placeholder = PLACEHOLDER_TOKEN;
 
 	return [
 		`你是一个翻译器，任务是把用户输入的文本翻译成${targetLang}。`,
 		pageMeta &&
 			`
 背景信息：
-- 页面标题：${pageMeta.title || "（无）"}
-- 页面描述：${pageMeta.description || "（无）"}`,
+- 页面标题：${pageMeta.title || "无"}
+- 页面描述：${pageMeta.description || "无"}`,
 		`
 规则：
-- 用户输入的${SEGMENT_MARKER_LABEL}为分段标记（N为段序号，从1递增，每段都以${SEGMENT_MARKER_LABEL}结尾），${PLACEHOLDER_MARKER_LABEL}为变量标记，严禁翻译、改动或移动它们。
+- 用户输入的${SEGMENT_MARKER_LABEL}为分段标记（N为段序号，从1递增，每段都以${SEGMENT_MARKER_LABEL}结尾），${placeholder}为不译内容标记，严禁翻译、改动或移动它们。
 - 即使残缺的段落（如单独一个"the"等无实际意义的单词）难以翻译，也要保留每段的${SEGMENT_MARKER_LABEL}标记，**绝不能**丢弃、合并任何标记或改变标记的序号。
 - 只输出译文，不要输出任何解释、提示或原文。`,
 		`
-示例1：
-输入："The quick brown fox jumps over the lazy dog.${seg1}"
-正确输出："敏捷的棕色狐狸跳过了懒狗。${seg1}"
+正确示例：
+输入："The quick brown ${placeholder} jumps over the lazy dog.${seg1}And..."
+输出："敏捷的棕色${placeholder}跳过了懒狗。${seg1}然后..."
 
-示例2：
-输入："The ${seg1}RegExp Engine${seg2} can only be created by ${var1}.${seg3}"
-正确输出："这个${seg1}正则引擎${seg2}只能由${var1}创建。${seg3}"
-错误输出："这个${seg1}正则引擎${seg2}只能由${var1}创建。"
-原因：丢失了${seg3}标记，导致段落数对不上，严禁这样做！`,
+错误示例：
+输入："The ${seg1}RegExp Engine can only be created by ${placeholder}.${seg2}So..."
+输出："正则引擎只能由${placeholder}创建。${seg2}所以..."
+为什么错：丢失了${seg1}标记，导致段落数对不上
+正确输出："${seg1}正则引擎只能由${placeholder}创建。${seg2}所以..."`,
 	]
 		.filter(Boolean)
 		.join("\n");
