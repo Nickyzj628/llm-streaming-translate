@@ -6,6 +6,7 @@ import {
 	show as showButton,
 } from "@/content/FloatingButton";
 import { createInlineTranslator } from "@/content/InlineTranslator";
+import { isAlreadyTargetLanguage } from "@/content/selectionLanguage";
 import {
 	startTranslationSession,
 	type TranslationSession,
@@ -122,22 +123,30 @@ function handleMouseUp(e: MouseEvent): void {
 		// 先打断上一会话（重新划词或点击空白取消选择都会打断进行中的翻译；
 		// abort 对空闲状态是幂等安全的）
 		abortCurrent();
+		// 新的一次划词先把旧按钮收掉，检测结果回来前不显示任何东西
+		hideButton();
 
-		if (getSelectedText().length === 0) {
-			hideButton();
-			return;
-		}
+		const selectedText = getSelectedText();
+		if (selectedText.length === 0) return;
 
-		showButton(e.clientX + 8, e.clientY + 8);
-		onClick(() => {
-			const selection = window.getSelection();
-			if (!selection || selection.rangeCount === 0) return;
-			// 保留 Range，仅清除高亮
-			const range = selection.getRangeAt(0);
-			selection.removeAllRanges();
-			// 点击浮动按钮即视为开始翻译：立即隐藏按钮，避免残留
-			hideButton();
-			startTranslation(range);
+		void isAlreadyTargetLanguage(selectedText).then((alreadyTarget) => {
+			// 检测期间选区变了（多半是又快着划了下一段），这次结果直接作废
+			if (getSelectedText() !== selectedText) return;
+
+			// 选中的已经是目标语言就不用翻了
+			if (alreadyTarget) return;
+
+			showButton(e.clientX + 8, e.clientY + 8);
+			onClick(() => {
+				const selection = window.getSelection();
+				if (!selection || selection.rangeCount === 0) return;
+				// 保留 Range，仅清除高亮
+				const range = selection.getRangeAt(0);
+				selection.removeAllRanges();
+				// 点击浮动按钮即视为开始翻译：立即隐藏按钮，避免残留
+				hideButton();
+				startTranslation(range);
+			});
 		});
 	});
 }
@@ -145,6 +154,8 @@ function handleMouseUp(e: MouseEvent): void {
 function handleSelectionChange(): void {
 	// 翻译进行中不处理选区变化，避免干扰正在写回的锚点
 	if (activeSession !== null) return;
+	// 只处理清空：语言判定要调 CLD（异步），留给 mouseup 一次性做，
+	// 否则拖动选择时每个 selectionchange 都会发一次检测
 	if (getSelectedText().length === 0) {
 		hideButton();
 	}

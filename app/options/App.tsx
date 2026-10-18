@@ -12,11 +12,17 @@ import { useToast } from "./hooks/useToast";
 import { PRESETS } from "./utils/constants";
 import type { ImportableConfig } from "./utils/importExport";
 import { fetchModels } from "./utils/model";
+import {
+	checkCustomBody,
+	isLanguageCodeList,
+	normalizeTargetLang,
+} from "./utils/normalizeLang";
 
 const App: Component = () => {
 	const { form, setForm, loadFromStorage, saveToStorage } = useOptionsForm();
 	const [models, setModels] = createSignal<string[]>([]);
 	const [isLoadingModels, setIsLoadingModels] = createSignal(false);
+	const [isSaving, setIsSaving] = createSignal(false);
 	const { toast, showToast } = useToast();
 	let fetchAbortController: AbortController | null = null;
 
@@ -84,8 +90,39 @@ const App: Component = () => {
 
 	const handleSave = async (e: Event): Promise<void> => {
 		e.preventDefault();
-		await saveToStorage();
-		showToast("设置已保存", "success");
+		setIsSaving(true);
+		try {
+			let targetLang = form.targetLang.trim();
+			let message = "设置已保存";
+			let toastType: "success" | "error" = "success";
+
+			// 自定义请求体先检查一遍，解析结果给标准化请求复用
+			const customBody = checkCustomBody(form.body);
+
+			// 填的是语言名称（不是代码）才问模型，已经是代码就省一次请求
+			if (targetLang && !isLanguageCodeList(targetLang)) {
+				try {
+					targetLang = await normalizeTargetLang({
+						baseUrl: form.baseUrl,
+						model: form.model,
+						apiKey: form.apiKey,
+						body: customBody,
+						targetLang,
+					});
+				} catch (err) {
+					// 标准化失败不挡保存：原样存，最多是按钮判断退化成“始终显示”
+					console.warn("[options]目标语言标准化失败：", err);
+					message = "设置已保存，但目标语言标准化失败，已按原文保存";
+					toastType = "error";
+				}
+			}
+
+			setForm("targetLang", targetLang);
+			await saveToStorage();
+			showToast(message, toastType);
+		} finally {
+			setIsSaving(false);
+		}
 	};
 
 	// 导入成功后回填表单字段（模型列表不自动拉取，由用户点"刷新"触发）
@@ -232,8 +269,8 @@ const App: Component = () => {
 				</div>
 
 				<div class={styles.actions}>
-					<Button type="submit" variant="primary" size="large">
-						保存设置
+					<Button type="submit" variant="primary" size="large" disabled={isSaving()}>
+						{isSaving() ? "保存中..." : "保存设置"}
 					</Button>
 				</div>
 			</form>

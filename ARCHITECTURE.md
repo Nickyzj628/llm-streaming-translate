@@ -43,7 +43,14 @@
 
 ### 阶段一：划词 → 显示浮动按钮
 - `content/index.ts`：`handleMouseUp` → `getSelectedText()` 读选区文本。
-- 有文字 → `showButton(x, y)` + `onClick(() => startTranslation(range))`。
+- 空选区 → 隐藏按钮；非空则用 `browser.i18n.detectLanguage` 取占比最高的语言代码，
+  再和 storage 里的 `targetLang`（逗号分隔，如 `zh, zh-CN, zh-Hans`）比对，已经是
+  目标语言 → 同样不弹。检测是异步的，每次划词先隐藏旧按钮，结果回来再确认选区
+  文本没变，迟到的结果不会乱弹按钮。API 虽然是异步的，但底层 CLD 很快：一句话约
+  0.2ms、大段长文约 1ms，等它一下不会拖慢按钮出现。
+- `targetLang` 在 options 保存时用表单里配置的模型把“简体中文”这类名称转成代码
+  （`options/utils/normalizeLang.ts`）；标准化失败则原样保存，按钮判断退化为始终显示。
+- 需要翻译的文字 → `showButton(x, y)` + `onClick(() => startTranslation(range))`。
 - 按钮 DOM 全在 `FloatingButton.ts`（每次点击都 `show()` 重建，`onClick` 注册点击回调）。
 
 ### 阶段二：点击按钮 → 建立段目标

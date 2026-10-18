@@ -8,7 +8,7 @@
 import { defaultStorage } from "../../types/storage";
 import { getAllStorage, setStorage } from "../../utils/storage";
 
-/** 与 StorageSchema 一致的可导入字段（targetLang 可选，缺省回退"简体中文"） */
+/** 与 StorageSchema 一致的可导入字段（targetLang 可选，缺省回退默认语言代码） */
 export interface ImportableConfig {
 	baseUrl: string;
 	model: string;

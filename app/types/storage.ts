@@ -11,5 +11,5 @@ export const defaultStorage: StorageSchema = {
 	model: "deepseek-v4-flash",
 	apiKey: "",
 	body: `{"thinking": {"type": "disabled"}}`,
-	targetLang: "简体中文",
+	targetLang: "zh, zh-CN, zh-Hans",
 };
