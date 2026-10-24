@@ -8,7 +8,7 @@ export interface StorageSchema {
 
 export const defaultStorage: StorageSchema = {
 	baseUrl: "https://api.deepseek.com",
-	model: "deepseek-v4-flash",
+	model: "deepseek-flash",
 	apiKey: "",
 	body: `{"thinking": {"type": "disabled"}}`,
 	targetLang: "zh, zh-CN, zh-Hans",
