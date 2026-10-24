@@ -84,6 +84,35 @@ export function collectTextNodes(range: Range): CollectedTextNode[] {
 }
 
 /**
+ * 选区里还有没有"真需要翻一段"的文本节点：不在 preserve 块内、选中部分不是纯空白。
+ *
+ * 判据和 collectTextNodes 保持同一套，区别只在命中一个就早退——这是阶段一的预筛，
+ * 整页长选区不值得我们收完全部节点才回答"这里全是代码块"。
+ * 只读 DOM，不建锚点，随便调。
+ */
+export function hasTranslatableNode(range: Range): boolean {
+	let root = range.commonAncestorContainer;
+	if (root.nodeType === Node.TEXT_NODE) {
+		root = root.parentElement!;
+	}
+
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	let node = walker.nextNode() as Text | null;
+	while (node) {
+		// 代码块里的节点整块走 {{var}} 占位符，算不得可翻内容
+		if (range.intersectsNode(node) && findPreserveRoot(node) === null) {
+			const text = node.textContent ?? "";
+			const start = node === range.startContainer ? range.startOffset : 0;
+			const end = node === range.endContainer ? range.endOffset : text.length;
+			// 只剩格式美化空白（元素之间的换行缩进）也不用翻
+			if (text.slice(start, end).trim() !== "") return true;
+		}
+		node = walker.nextNode() as Text | null;
+	}
+	return false;
+}
+
+/**
  * 把文本节点的 [start, end) 范围包一层 <span class="llm-selected"> 锚点。
  * 返回该 span，后续流式写回/恢复都直接操作它，无需计算 offset。
  */

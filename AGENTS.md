@@ -12,7 +12,7 @@
 |---|---|---|
 | `pnpm dev` | 启动 dev server（`addfox dev --no-open --cache`） | 不自动打开浏览器 |
 | `pnpm typecheck` | `tsc --noEmit` | TS7 strict，唯一的类型检查方式 |
-| `pnpm test` | `rstest run` | 单测在 `__tests__/`：段对齐协议（`protocol.ts`）、段计划（`segmentPlan.ts`）、会话对齐/重试（`TranslationSession.ts`） |
+| `pnpm test` | `rstest run` | 单测在 `__tests__/`：段对齐协议（`protocol.ts`）、段计划（`segmentPlan.ts`）、选区预筛（`textFilter.ts`）、会话对齐/重试（`TranslationSession.ts`） |
 | `pnpm lint` / `pnpm lint:fix` | Biome 检查（`biome.json` 的 includes 决定范围：app/、配置与测试） | |
 | `pnpm format` / `pnpm format:check` | Biome 格式化（范围同上） | |
 | `pnpm build` | 同时构建 firefox + chrome | 产物在 `.addfox/extension/` |
@@ -25,7 +25,7 @@
 > 完整调用链与阶段详解见 **`ARCHITECTURE.md`**（新人阅读入口，按"概览 → 阅读建议 → 阶段详解"编排）。
 
 ### 翻译流程（选词 → 流式原地替换）
-1. `app/content/index.ts`：监听选区，**仅当选区不是目标语言时**弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入；用 `browser.i18n.detectLanguage` 取占比最高的语言代码，再和 storage 里的 `targetLang` 比对，判断在 `content/selectionLanguage.ts`、`utils/language.ts`）。
+1. `app/content/index.ts`：监听选区，**仅当选区既不是目标语言、又确实有东西可翻时**弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。检测语言之前先过一道同步预筛（`content/selectionFilter.ts`）：纯 URL / 纯数字符号（`utils/textFilter.ts` 的 `hasTranslatableText`）与整块选中 `pre/code`（`domAnchor.hasTranslatableNode`）直接不弹，连 CLD 都不跑；再用 `browser.i18n.detectLanguage` 取占比最高的语言代码，和 storage 里的 `targetLang` 比对，判断在 `content/selectionLanguage.ts`、`utils/language.ts`）。
 2. 点击后 `createInlineTranslator(range)`（`app/content/InlineTranslator.ts`，内部三步：`domAnchor` 收集 → `segmentPlan` 拼协议行 → 建锚点）提取选区内的文本节点，**每个文本节点一段**，协议文本由 `TranslationSession` 按 `{{segN}}` 分段拼出（不译内容用 `{{var}}` 占位符，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。
 3. `app/background/prompt.ts` 提供 system prompt（模型侧协议契约），`app/background/StreamTranslator.ts` 用 `@nickyzj2023/ai` 的 `stream`（内部就是 fetcher + parseSSE，**不是** OpenAI 官方 SDK）流式请求，把 `CHUNK` / `DONE` / `ERROR` 经端口回传；持有 `AbortController`，端口断开（content 打断/页面卸载）时立即中止请求，避免为已放弃的会话继续消耗 token。
 4. 内容脚本按 `{{segN}}` 分隔拆分流式 chunk，逐段写回对应锚点（**删除占位符后写译文**，preserve 段保持原文）。译文直接替换原文，**无任何高亮/样式标记**。

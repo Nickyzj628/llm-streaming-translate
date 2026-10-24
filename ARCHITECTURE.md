@@ -43,7 +43,15 @@
 
 ### 阶段一：划词 → 显示浮动按钮
 - `content/index.ts`：`handleMouseUp` → `getSelectedText()` 读选区文本。
-- 空选区 → 隐藏按钮；非空则用 `browser.i18n.detectLanguage` 取占比最高的语言代码，
+- 空选区 → 隐藏按钮；非空先过一道**预筛**（`content/selectionFilter.ts`，纯同步判断，
+  比语言检测还早）：
+  - 文本层 `utils/textFilter.ts` 的 `hasTranslatableText`：去掉 URL（带 scheme 或
+    `www.` 开头）后连字母都不剩——纯链接、纯数字、纯符号，翻不出东西 → 不弹。
+    口径故意保守，裸域名（`example.com`、`node.js`）不算 URL，免得把正常词汇挡掉；
+  - DOM 层 `domAnchor.hasTranslatableNode`：选区里没有任何非 preserve 的可翻文本
+    （整块选中 `pre/code`，阶段二只会得到一段 `{{var}}`）→ 不弹。判据与阶段二的
+    `collectTextNodes` 同一套，只读 DOM、命中一个就早退。
+- 预筛通过则用 `browser.i18n.detectLanguage` 取占比最高的语言代码，
   再和 storage 里的 `targetLang`（逗号分隔，如 `zh, zh-CN, zh-Hans`）比对，已经是
   目标语言 → 同样不弹。检测是异步的，每次划词先隐藏旧按钮，结果回来再确认选区
   文本没变，迟到的结果不会乱弹按钮。API 虽然是异步的，但底层 CLD 很快：一句话约

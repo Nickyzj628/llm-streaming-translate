@@ -6,6 +6,7 @@ import {
 	show as showButton,
 } from "@/content/FloatingButton";
 import { createInlineTranslator } from "@/content/InlineTranslator";
+import { shouldOfferTranslation } from "@/content/selectionFilter";
 import { isAlreadyTargetLanguage } from "@/content/selectionLanguage";
 import {
 	startTranslationSession,
@@ -128,6 +129,12 @@ function handleMouseUp(e: MouseEvent): void {
 
 		const selectedText = getSelectedText();
 		if (selectedText.length === 0) return;
+
+		// 语言检测之前先过一道预筛：纯 URL、纯数字符号、整块代码块翻不出东西，
+		// 既不该弹按钮，也不值得为它跑一次 CLD（同步判断，比检测还快）
+		const selection = window.getSelection();
+		if (!selection || selection.rangeCount === 0) return;
+		if (!shouldOfferTranslation(selection.getRangeAt(0), selectedText)) return;
 
 		void isAlreadyTargetLanguage(selectedText).then((alreadyTarget) => {
 			// 检测期间选区变了（多半是又快着划了下一段），这次结果直接作废
