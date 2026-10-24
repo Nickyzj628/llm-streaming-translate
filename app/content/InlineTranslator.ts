@@ -5,7 +5,11 @@ import {
 	wrapElement,
 	wrapSelected,
 } from "@/content/domAnchor";
-import { planSegments, type SegmentInput } from "@/content/segmentPlan";
+import {
+	keepsNewlines,
+	planSegments,
+	type SegmentInput,
+} from "@/content/segmentPlan";
 
 /**
  * 原地翻译器的 DOM 层：把选区变成一组"段锚点"，之后按段号写回译文。
@@ -71,11 +75,30 @@ function buildSegments(range: Range): SegmentTarget[] {
 	> = [];
 	const handledPreserveRoots = new Set<Element>();
 
+	// 同一容器里的文本节点往往是一串，getComputedStyle 不便宜，按父元素缓存一次结果
+	// （必须在建锚点之前算：包裹 span 会改 DOM，但 white-space 是继承属性、结果不变）
+	const keepsByParent = new Map<Element, boolean>();
+	const containerKeepsNewlines = (node: Text): boolean => {
+		const parent = node.parentElement;
+		if (!parent) return false;
+		const cached = keepsByParent.get(parent);
+		if (cached !== undefined) return cached;
+		const value = keepsNewlines(getComputedStyle(parent).whiteSpace);
+		keepsByParent.set(parent, value);
+		return value;
+	};
+
 	for (const item of collected) {
 		if (item.preserveRoot) {
 			if (handledPreserveRoots.has(item.preserveRoot)) continue;
 			handledPreserveRoots.add(item.preserveRoot);
-			inputs.push({ preserve: true, selected: "", before: "", after: "" });
+			inputs.push({
+				preserve: true,
+				selected: "",
+				before: "",
+				after: "",
+				keepNewlines: false,
+			});
 			sources.push({ kind: "preserve", root: item.preserveRoot });
 			continue;
 		}
@@ -85,6 +108,7 @@ function buildSegments(range: Range): SegmentTarget[] {
 			selected: text.slice(item.start, item.end),
 			before: text.slice(0, item.start),
 			after: text.slice(item.end),
+			keepNewlines: containerKeepsNewlines(item.node),
 		});
 		sources.push({
 			kind: "translate",

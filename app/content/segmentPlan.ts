@@ -14,6 +14,11 @@ export interface SegmentInput {
 	after: string;
 	/** 是否为 preserve 块（整块只占一个占位符） */
 	preserve: boolean;
+	/**
+	 * 这个节点所在的容器会不会真渲染换行（white-space 为 pre/pre-wrap 等）。
+	 * 为 true 时协议行保留原始 \n，让模型翻译后能把段落带回来
+	 */
+	keepNewlines: boolean;
 }
 
 /** 段计划：一段的协议行与类型（DOM 锚点由调用方建立） */
@@ -29,14 +34,35 @@ export interface PlannedSegment {
 }
 
 /**
- * 协议行内的连续换行折叠为单个空格。
- *
- * 段内换行虽然不破坏段数对齐（{{segN}} 才是地标），但会稀释小模型的注意力，
- * 且页面文本节点的换行多来自源码美化、没有语义。注意只折叠协议行：
- * originalText 保留原始换行（回滚时必须逐字恢复）。
+ * 会真的把 \n 渲染成换行的 white-space 取值（其余取值下 \n 在页面上等同空格）
  */
-export function collapseNewlines(text: string): string {
-	return text.replace(/\n+/g, " ");
+const NEWLINE_RENDERING_WHITE_SPACE = new Set([
+	"pre",
+	"pre-wrap",
+	"pre-line",
+	"break-spaces",
+]);
+
+/**
+ * 这个 white-space 取值下浏览器会不会真渲染换行。
+ *
+ * 判据取自 CSS：white-space 是继承属性，getComputedStyle 拿到的已经是继承后的
+ * 值，所以看文本节点直接父元素就够
+ */
+export function keepsNewlines(whiteSpace: string): boolean {
+	return NEWLINE_RENDERING_WHITE_SPACE.has(whiteSpace.trim().toLowerCase());
+}
+
+/**
+ * 归一化协议行里的换行。
+ *
+ * keepNewlines 时原样留着：pre-wrap 这类容器里的换行是页面真会渲染的语义信息，
+ * 折成空格模型就再也译不回来（推文、评论区长文就是这么丢段落的）
+ * 否则把连续换行折成单个空格：普通容器里 \n 本来就等同空格，留着只是噪音
+ * 注意只管协议行，originalText 永远保留原始换行（回滚要逐字恢复）
+ */
+export function normalizeNewlines(text: string, keepNewlines: boolean): string {
+	return keepNewlines ? text : text.replace(/\n+/g, " ");
 }
 
 /**
@@ -55,13 +81,13 @@ export function planSegments(inputs: SegmentInput[]): PlannedSegment[] {
 		if (input.preserve) {
 			return { kind: "preserve", row: PLACEHOLDER_TOKEN, originalText: "" };
 		}
-		const before = collapseNewlines(input.before);
-		const after = collapseNewlines(input.after);
+		const before = normalizeNewlines(input.before, input.keepNewlines);
+		const after = normalizeNewlines(input.after, input.keepNewlines);
 		return {
 			kind: "translate",
 			row:
 				(before ? PLACEHOLDER_TOKEN : "") +
-				collapseNewlines(input.selected) +
+				normalizeNewlines(input.selected, input.keepNewlines) +
 				(after ? PLACEHOLDER_TOKEN : ""),
 			originalText: input.selected,
 		};

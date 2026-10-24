@@ -80,6 +80,16 @@ export function startTranslationSession(options: {
 	 * totalSegments - fromSegment，否则 finish 的段数兜底会把重试流误判成漏段。
 	 */
 	let expectedSegments = totalSegments;
+	/**
+	 * 最后一段已提交的完整译文。模型把段内换行当成新段、自己往后编号时，
+	 * 多出来的内容要拼回这一段（见 onSegment 的溢出分支），不能丢
+	 */
+	let lastSegmentText = "";
+	/**
+	 * 当前流的序号。换流（错位重试）后，旧流的迟到回调（abort 竞态、端口在途消息）
+	 * 一律丢弃——否则旧流的 chunk/DONE 会推进新流的解析器，一串连环错位
+	 */
+	let streamSeq = 0;
 
 	/**
 	 * 会话收尾：置结束标志、清句柄并通知持有方。
@@ -102,21 +112,59 @@ export function startTranslationSession(options: {
 	function makeParser(): SegmentStreamParser {
 		return new SegmentStreamParser({
 			onSegment: (segment, segmentNumber) => {
+				const text = extractTranslatedContent(segment);
+				// 真实段都写满了，模型还在给段号：这些是它给段内换行自己编的段，
+				// 内容属于最后一段的续写，拼回去（原来越界下标会被静默丢掉，译文只剩开头）
+				if (cursor >= totalSegments) {
+					appendToLastSegment(text);
+					return;
+				}
 				const expected = cursor + 1;
 				if (segmentNumber !== expected) {
 					handleMisalign(cursor);
 					return;
 				}
-				// 删除占位符 {{var}} 得到纯译文再写回；未选中部分由 DOM 原文兜底，
-				// 上下文保真不依赖模型
-				translator.writeSegment(cursor, extractTranslatedContent(segment));
+				writeSegmentAt(cursor, text);
 				cursor++;
 			},
 			// 未完成尾段：写入当前锚点作流式预览，无序号也不推进下标
 			onPartial: (partial) => {
-				translator.writeSegment(cursor, extractTranslatedContent(partial));
+				const text = extractTranslatedContent(partial);
+				// 段都写满还在出内容：同样是最后一段的续写，预览时临时拼上，
+				// 不动已提交的 lastSegmentText，等完整段到达再正式拼
+				if (cursor >= totalSegments) {
+					translator.writeSegment(
+						totalSegments - 1,
+						joinLastSegment(lastSegmentText, text),
+					);
+					return;
+				}
+				translator.writeSegment(cursor, text);
 			},
 		});
+	}
+
+	/** 写回一段，并记住最后一段的完整译文（溢出内容拼接要用） */
+	function writeSegmentAt(index: number, text: string): void {
+		translator.writeSegment(index, text);
+		if (index === totalSegments - 1) lastSegmentText = text;
+	}
+
+	/**
+	 * 把模型溢出的段内容拼到最后一段末尾。
+	 * 为什么用空行拼：模型总是因为看到段内换行才自己编号，那些换行原文里本来就有
+	 */
+	function appendToLastSegment(text: string): void {
+		if (text === "") return;
+		lastSegmentText = joinLastSegment(lastSegmentText, text);
+		translator.writeSegment(totalSegments - 1, lastSegmentText);
+	}
+
+	/** 两段译文按原文的空行接起来（任一为空就返回另一个） */
+	function joinLastSegment(base: string, extra: string): string {
+		if (!base) return extra;
+		if (!extra) return base;
+		return `${base}\n\n${extra}`;
 	}
 
 	/**
@@ -136,6 +184,14 @@ export function startTranslationSession(options: {
 	 */
 	function handleMisalign(fromSegment: number): void {
 		if (ended) return;
+		// 真实段都写满了，没有可重译的内容：直接按成功收尾。
+		// 绝不能拿 rows.slice(超出末尾) 的空串去发请求——那会变成一个空 content 的
+		// 空转请求，只烧 token 不产出
+		if (fromSegment >= totalSegments) {
+			translator.finish();
+			end();
+			return;
+		}
 		// 达到重试上限：放弃，回滚原文（同 onError 行为），避免反复错位死循环
 		if (attempts >= MAX_ATTEMPTS) {
 			currentStream?.abort();
@@ -163,17 +219,25 @@ export function startTranslationSession(options: {
 	 * @param text 发给 LLM 的协议文本（初始为全文本，重试为后半段子文本）
 	 */
 	function runStream(text: string): void {
+		// 每次发起领一个流序号：换流之后旧流的回调全部作废（abort 有竞态，
+		// 端口也可能还有在途消息，让它们继续推进解析器就是连环错位）
+		const seq = ++streamSeq;
+		const isCurrent = (): boolean => !ended && seq === streamSeq;
+
 		currentStream = transport({
 			text,
 			pageMeta: getPageMeta(),
 			onChunk: (chunk) => {
+				if (!isCurrent()) return;
 				parser.push(chunk);
 			},
 			onDone: () => {
+				if (!isCurrent()) return;
 				// flush 缓冲，再用段数兜底：流式阶段的序号校验抓不到"漏抄末尾
 				// 分隔符、把最后两段并成一段"这类情况（尾段没序号），这里用
 				// 输出段数 < 期望段数判断末尾吞段，从 cursor 起续译。
-				// 多输出段不重试——多余段已在 writeSegment 越界检查里丢掉了。
+				// 多输出段不重试——溢出段已在 onSegment 里拼回最后一段，
+				// 重译只会把已经拿到的译文再丢一次
 				parser.flush();
 				if (parser.segmentCount < expectedSegments) {
 					handleMisalign(cursor);
@@ -186,11 +250,13 @@ export function startTranslationSession(options: {
 				end();
 			},
 			onError: (error) => {
+				if (!isCurrent()) return;
 				console.error(error);
 				translator.destroy();
 				end();
 			},
 			onDisconnect: () => {
+				if (!isCurrent()) return;
 				translator.destroy();
 				end();
 			},

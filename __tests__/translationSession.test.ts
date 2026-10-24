@@ -175,6 +175,47 @@ describe("正常流", () => {
 		expect(s.written).toEqual([{ index: 0, text: "一" }]);
 		expect(s.destroyed()).toBe(0);
 	});
+
+	it("模型给段内换行自己编号时，溢出段拼回最后一段而不是丢掉", () => {
+		const s = startSession(["整篇推文就是一段"]);
+
+		// 输入只有 1 段，模型却按段内换行自己编号到 seg3
+		// （真实场景：推文里每两个段落之间有换行）
+		s.streams[0].options.onChunk(
+			"第一段。{{seg1}}\n\n第二段。{{seg2}}\n\n第三段。{{seg3}}",
+		);
+
+		// 越界下标原先是静默丢弃的，结果页面只剩第一段；现在按空行拼回同一段
+		expect(s.written[s.written.length - 1]).toEqual({
+			index: 0,
+			text: "第一段。\n\n第二段。\n\n第三段。",
+		});
+		// 不需要重试：内容已经拿全了
+		expect(s.streams.length).toBe(1);
+
+		s.streams[0].options.onDone();
+		expect(s.finished()).toBe(1);
+		expect(s.destroyed()).toBe(0);
+	});
+
+	it("溢出段的流式预览也拼在最后一段上，不推进下标", () => {
+		const s = startSession(["一段"]);
+
+		s.streams[0].options.onChunk("第一段。{{seg1}}\n\n第二段");
+
+		// 预览临时拼上去，不改已提交的段内容
+		expect(s.written[s.written.length - 1]).toEqual({
+			index: 0,
+			text: "第一段。\n\n第二段",
+		});
+
+		// 完整段到达后正式拼，内容不重复
+		s.streams[0].options.onChunk("。{{seg2}}");
+		expect(s.written[s.written.length - 1]).toEqual({
+			index: 0,
+			text: "第一段。\n\n第二段。",
+		});
+	});
 });
 
 describe("断点重试", () => {
@@ -231,6 +272,25 @@ describe("断点重试", () => {
 		expect(s.streams.length).toBe(2);
 		expect(s.restored).toEqual([1, 2]);
 		expect(s.streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
+		expect(s.destroyed()).toBe(0);
+	});
+
+	it("换流后旧流的迟到回调不影响新流", () => {
+		const s = startSession(["甲", "乙", "丙"]);
+
+		// 第 2 段给了 3 号 → 触发断点重试，换到第 2 条流
+		s.streams[0].options.onChunk("一{{seg1}}二{{seg3}}");
+		expect(s.streams.length).toBe(2);
+		const writtenBefore = s.written.length;
+
+		// 旧流的 chunk / DONE 迟到（abort 竞态、端口在途消息）：全部丢弃，
+		// 否则会推进新流的解析器，滚出一串连环错位
+		s.streams[0].options.onChunk("脏{{seg2}}");
+		s.streams[0].options.onDone();
+
+		expect(s.written.length).toBe(writtenBefore);
+		expect(s.streams.length).toBe(2);
+		expect(s.finished()).toBe(0);
 		expect(s.destroyed()).toBe(0);
 	});
 
