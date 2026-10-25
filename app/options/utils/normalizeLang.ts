@@ -6,7 +6,7 @@
  * 模型做一次名称→代码的映射，冷门语言也能覆盖。
  */
 
-import { stream } from "@nickyzj2023/ai";
+import { nonStream } from "@nickyzj2023/ai";
 
 /** BCP 47 的粗略形态：主语言 + 可选子标签，够挡住模型偶尔冒出来的中文说明 */
 const LANGUAGE_CODE_PATTERN = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/i;
@@ -40,9 +40,8 @@ export async function normalizeTargetLang(
 	delete body.messages;
 	delete body.tools;
 
-	// 库只有流式接口，这里把 delta 拼回完整回复
-	let reply = "";
-	for await (const event of stream(
+	// 一次性拿完整回复即可，不关心逐字输出；nonStream 失败会直接抛错
+	const { content } = await nonStream(
 		{
 			baseUrl: options.baseUrl,
 			model: options.model,
@@ -54,15 +53,9 @@ export async function normalizeTargetLang(
 		],
 		[],
 		{ body },
-	)) {
-		if (event.type === "content_delta") {
-			reply += event.delta;
-		} else if (event.type === "error") {
-			throw new Error(event.message);
-		}
-	}
+	);
 
-	const codes = parseLanguageCodeList(reply);
+	const codes = parseLanguageCodeList(content);
 	if (codes.length === 0) {
 		throw new Error("模型没有返回可用的语言代码");
 	}
