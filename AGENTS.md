@@ -1,52 +1,106 @@
-# AGENTS.md — LLM Streaming Translator
+# AGENTS.md
 
-> **优先级**：先读 `.agents/skills/` 里的 Addfox 官方技能（addfox-best-practices / addfox-debugging / addfox-testing），再读本文档，最后参考 [addfox 文档](https://addfox.dev)。
+> 本文是**给写代码的 agent 的约束清单**，不是教程。人类向的流程说明在 `ARCHITECTURE.md`。
+> 读序：`.agents/skills/`（addfox-best-practices → addfox-debugging → addfox-testing）→ 本文件 → `ARCHITECTURE.md`（只在要改流程时）→ https://addfox.dev
 
-## 项目概览
+## 栈 / 命令 / 门禁
 
-基于 **SolidJS + Addfox** 的 MV3 划词翻译扩展，支持 Chrome 和 Firefox。包管理器为 **pnpm**。单测用 **Rstest**（`pnpm test`，目前覆盖段对齐协议与一次会话的对齐/重试）。
+栈：SolidJS + Addfox，MV3，Chrome + Firefox，pnpm，Rstest，Biome，TS7 strict。
 
-## 开发命令
+| 命令 | 语义 |
+|---|---|
+| `pnpm dev` | `addfox dev --no-open --cache`，不自动开浏览器 |
+| `pnpm typecheck` | `tsc --noEmit`，**唯一**类型检查 |
+| `pnpm test` | `rstest run`，测试在 `__tests__/` |
+| `pnpm lint` / `lint:fix` | Biome check（范围见 `biome.json` includes：`app/`、配置、`__tests__/`） |
+| `pnpm format` / `format:check` | Biome format（同范围） |
+| `pnpm build` | firefox + chrome，产物 `.addfox/extension/` |
+| `pnpm zip:source` | 需本机 7z |
 
-| 命令 | 作用 | 备注 |
+**提交门禁（顺序执行，全绿才算完成）**：`pnpm lint` → `pnpm typecheck` → `pnpm test` → `pnpm build`。
+
+## 入口 / 文件地图
+
+入口仅 3 个（addfox 自动发现目录，新增/改名须保持结构）：`app/background/index.ts`、`app/content/index.ts`、`app/options/index.tsx`。无 popup/sidepanel。
+
+| 路径 | 职责 | 改它连带 |
 |---|---|---|
-| `pnpm dev` | 启动 dev server（`addfox dev --no-open --cache`） | 不自动打开浏览器 |
-| `pnpm typecheck` | `tsc --noEmit` | TS7 strict，唯一的类型检查方式 |
-| `pnpm test` | `rstest run` | 单测在 `__tests__/`：段对齐协议（`protocol.ts`）、段计划（`segmentPlan.ts`）、选区预筛（`textFilter.ts`）、会话对齐/重试（`TranslationSession.ts`） |
-| `pnpm lint` / `pnpm lint:fix` | Biome 检查（`biome.json` 的 includes 决定范围：app/、配置与测试） | |
-| `pnpm format` / `pnpm format:check` | Biome 格式化（范围同上） | |
-| `pnpm build` | 同时构建 firefox + chrome | 产物在 `.addfox/extension/` |
-| `pnpm zip:source` | 打包源码 zip | **依赖本机安装 7z** |
+| `content/index.ts` | 事件、按钮、持有 `activeSession`、历史/toast 接线 | 会话 options 变化时同步 |
+| `content/selectionFilter.ts` + `utils/textFilter.ts` | 同步预筛（纯 URL / 纯数字符号 / 整块 `pre`/`code` → 不弹） | 判据须与 `domAnchor` 一致 |
+| `content/selectionLanguage.ts` + `utils/language.ts` | CLD 语言判定 vs `targetLang` | — |
+| `content/FloatingButton.ts` | Shadow DOM 按钮 | `setParent(shadowRoot)` |
+| `content/domAnchor.ts` | TreeWalker 收集、包/拆锚点、preserve 判定 | 不改 DOM 的时机 |
+| `content/segmentPlan.ts` | 段计划纯逻辑（协议行、换行策略） | 有单测 |
+| `content/InlineTranslator.ts` | 建锚点 + `writeSegment/restoreSegment/finish/destroy/getResultRows` | 不碰协议解析 |
+| `content/TranslationSession.ts` | 会话主干：发请求、对齐、重试、收尾 | 有单测；状态全在闭包 |
+| `content/pageContext.ts` | 页级历史 + 冻结 `pageMeta` | 单例，模块级状态 |
+| `content/toast.ts` | toast 纯 DOM 渲染（进 Shadow DOM） | 禁引 Solid/CSS module |
+| `background/prompt.ts` | system prompt（模型侧协议契约 + 两条固定规则） | 与 protocol 文案一致 |
+| `background/StreamTranslator.ts` | messages 组装 + `stream()` + AbortController | START 字段变化时同步 |
+| `background/PortListener.ts` | 端口生命周期、重复 START 打断、断开 abort | — |
+| `utils/protocol.ts` | **协议唯一定义**：标记形态、拼接、解析、正则 | 改形态只动这里 |
+| `utils/streamTranslate.ts` | 端口客户端，透传 history/retry | 与 `types/messages.ts` 同步 |
+| `utils/retryReminder.ts` | 重试诊断文案（`<system-reminder>`） | 禁止写 `{{segN}}` 字面 |
+| `utils/toast.ts` | toast 状态单例（纯 TS，options+content 共用） | options hook 只是薄封装 |
+| `types/messages.ts` | 端口消息契约 | 两端同步 |
+| `types/storage.ts` + `utils/storage.ts` | 配置 schema / 读写 | — |
 
-提交前验证顺序：`pnpm lint` → `pnpm typecheck` → `pnpm test` → `pnpm build`。
+`.addfox/llms.txt`、`.addfox/meta.md` 自动生成，禁手改。`addfox.config.ts` 的 `browserPath` 机器相关。
 
-## 架构要点
+## 协议规格（硬约束）
 
-> 完整调用链与阶段详解见 **`ARCHITECTURE.md`**（新人阅读入口，按"概览 → 阅读建议 → 阶段详解"编排）。
+- 形态：段分隔 `{{segN}}`、不译内容占位 `{{var}}`。唯一定义 `utils/protocol.ts`；content 构造/解析/正则与 prompt 说明全部由它的常量派生。
+- 每**文本节点** = 一段；preserve 块（`pre`/`code` **最外层元素**）= 一段。段数 = 段目标数。
+- 段号 N = 下标 + 1，**绝对序号**；重试子文本沿用绝对号，不重置。
+- 未选中部分 / preserve 块 → `{{var}}`（固定形态、无编号）；写回时**删掉**，preserve 段一个字符都不写。
+- 段间只用 `{{segN}}`，**不用换行**：段内允许模型自由换行。但容器 `white-space` ∈ {pre, pre-wrap, pre-line, break-spaces} 时协议行保留原始换行（否则推文类内容被压成一段）；其他容器连续换行折叠为空格。
+- `originalText` 恒存原始换行（回滚逐字恢复）。
+- prompt：输出段数 == 输入段数、段号只来自输入、不许因段内换行补号；含成功/失败示例。改协议必须同步 prompt，否则译文错位。
 
-### 翻译流程（选词 → 流式原地替换）
-1. `app/content/index.ts`：监听选区，**仅当选区既不是目标语言、又确实有东西可翻时**弹出浮动按钮（`FloatingButton.ts`，Shadow DOM 注入）。检测语言之前先过一道同步预筛（`content/selectionFilter.ts`）：纯 URL / 纯数字符号（`utils/textFilter.ts` 的 `hasTranslatableText`）与整块选中 `pre/code`（`domAnchor.hasTranslatableNode`）直接不弹，连 CLD 都不跑；再用 `browser.i18n.detectLanguage` 取占比最高的语言代码，和 storage 里的 `targetLang` 比对，判断在 `content/selectionLanguage.ts`、`utils/language.ts`）。
-2. 点击后 `createInlineTranslator(range)`（`app/content/InlineTranslator.ts`，内部三步：`domAnchor` 收集 → `segmentPlan` 拼协议行 → 建锚点）提取选区内的文本节点，**每个文本节点一段**，协议文本由 `TranslationSession` 按 `{{segN}}` 分段拼出（不译内容用 `{{var}}` 占位符，见下方坑位说明），经**长连接端口 `stream-translate`** 发给 background。
-3. `app/background/prompt.ts` 提供 system prompt（模型侧协议契约），`app/background/StreamTranslator.ts` 用 `@nickyzj2023/ai` 的 `stream`（内部就是 fetcher + parseSSE，**不是** OpenAI 官方 SDK）流式请求，把 `CHUNK` / `DONE` / `ERROR` 经端口回传；持有 `AbortController`，端口断开（content 打断/页面卸载）时立即中止请求，避免为已放弃的会话继续消耗 token。
-4. 内容脚本按 `{{segN}}` 分隔拆分流式 chunk，逐段写回对应锚点（**删除占位符后写译文**，preserve 段保持原文）。译文直接替换原文，**无任何高亮/样式标记**。
+## 请求 / 上下文规格（前缀稳定性是硬性目标）
 
-### 最容易踩的坑
-- **`{{var}}` 占位符 + `{{segN}}` 段对齐协议**：content 端每个文本节点 = 一段（段数 = 节点数；分段决策在 `segmentPlan.ts`、DOM 操作在 `domAnchor.ts`），段间用 `{{segN}}` 分隔（**不用换行**——段内允许模型自由换行而不破坏段数对齐；而文本节点所在容器的 `white-space` 真会渲染换行时（pre-wrap 等），段内换行会原样留在协议行里、并要求模型在译文对应位置保留，否则推文这类靠换行分段的内容翻完就并成一整段）；`pre/code` 等 preserve 块以**最外层 preserve 元素为粒度整体折叠成一段**（整块只占一个占位符，块内几十个文本节点不会刷屏 prompt），未选中部分与 preserve 块统一替换为 `{{var}}` 占位符（固定形态、不带编号），模型只需**原样照抄占位符**、翻译其余部分，无需理解任何标签结构（降低本地小模型负担）。`background/prompt.ts` 的 system prompt 要求模型输出**段数与输入完全相同、段号只能来自输入**（不许因为段内换行自己补新段号），段间用 `{{segN}}` 分隔（prompt 含成功+失败示例，见 `buildSystemPrompt`）。写回时**删除占位符**得到纯译文写入选中锚点，未选中部分由 DOM 原文兜底；preserve 段写回原文、不依赖模型。语境信息来自网页元数据：content 端读取 `document.title` + meta description 随 START 消息的 `pageMeta` 字段发送，background 注入 system prompt 帮助模型理解页面主题（pageMeta 缺失时不注入）。标记形态（`{{segN}}` / `{{var}}`）的唯一定义在 `app/utils/protocol.ts`：content 构造、流式解析、三个正则与 prompt 说明全由它的标记常量派生，改形态只动那一处。改分段构造（`segmentPlan.ts`）、写回与对齐（`InlineTranslator.ts` / `TranslationSession.ts`）或提示词（`prompt.ts`）后必须确认模型侧仍描述同一协议，否则译文错位；协议、段计划与会话对齐/重试的纯逻辑有 `pnpm test`（`__tests__/`）钉住。
-- **消息协议**：端口消息类型定义在 `app/types/messages.ts`（START/CHUNK/DONE/ERROR），改动需同步 background 与 content 两侧。
-- **设置存储**：`browser.storage.local`，schema 在 `app/types/storage.ts`（baseUrl/model/apiKey/body/targetLang）。`body` 是任意 JSON，会被合并进 `/chat/completions` 请求体，修改时需保证 JSON 合法。`targetLang` 是逗号分隔的 i18n 语言代码（如 `zh, zh-CN, zh-Hans`），options 保存时用表单里配置的模型把“简体中文”这类名称标准化（`app/options/utils/normalizeLang.ts`）。
-- **模型列表**：选项页从 `{baseUrl}/models` 拉取，请求头 `Authorization: Bearer <apiKey>`。
-- **manifest 权限**：只有 `activeTab` + `storage`，通过 `optional_host_permissions`（http/https）访问 LLM 端点；新增 API 域名时沿用该模式。
+- messages：`[system] [...history] [user text]`；重试时在末条 user 前插 `[user previousInput][assistant previousOutput][user reminder]`。
+- `pageMeta`：**本页首次翻译时读一次后永久冻结**（`pageContext.readPageMetaOnce`）。禁止改回"每次重读"——标题变 → system 变 → 整段历史 cache miss。
+- history：append-only；只在**请求失败**时清空（`onFailed` → `clearHistory`+`showToast`）。禁止加条数/字符预算、禁止按 SPA 路由清。`abort()`（用户重新划词）不清历史、不提示。
+- 成功一次追加一对：`user = joinSegmentRows(rows,0)`，`assistant = joinSegmentRows(getResultRows(),0)`（重拼，非原始流）。失败分支不入历史。
+- prompt 里关于「历史编号与本次无关」「`<system-reminder>` 非待译内容」的两条规则**无条件存在**（条件化会让首次/重试 system 不同 → 前缀失效）。
+- `StreamTranslator` 用 `@nickyzj2023/ai` 的 `stream(model, messages, [], { signal, body })`（内部 fetcher + parseSSE，**不是** openai SDK）；`options.body` 平铺进 `/chat/completions`。错误已被 `extractErrorMessage` 归一（fetcher 丢弃 HTTP 状态码，只留 `statusText || body`）。
+
+## 会话状态机（`TranslationSession`）
+
+- 对齐判定：`segmentNumber < cursor+1` → 丢弃（模型重述已译部分）；`==` → 写回、`cursor+1`；`>` → `handleMisalign`。
+- 溢出：`cursor >= totalSegments` 仍有段号 → 按空行拼回最后一段，不重试。
+- `DONE`：`parser.flush()`；`aligned < attemptExpected` → 视为末尾吞段续译；否则 `finish()`（unwrap + 写历史）。
+- 失败三路（`onError` / `onDisconnect` / `MAX_ATTEMPTS=5` 耗尽）统一 `fail()`：`destroy()` → `onFailed(msg)` → `end()`。
+- 重试：恢复 `fromSegment..` 锚点原文（保留已译前半段）、`cursor` 回退、重建 parser、子文本用绝对号、带 `retry`；`streamSeq` 让旧流的 chunk/DONE/ERROR 全部作废；`fromSegment >= totalSegments` 直接收尾（禁发空请求）。
+- 每轮流维护 `aligned` / `attemptExpected`；`lastInput` / `lastRawOutput` 在 `runStream` 重置，取 retry 参数必须在调用前。
+
+## 存储 / 权限 / 设置页
+
+- `browser.storage.local`，schema `baseUrl/model/apiKey/body/targetLang`；`body` 是任意 JSON，须合法，会被合并进请求体。
+- `targetLang` = 逗号分隔 i18n 代码（`zh, zh-CN, zh-Hans`）；options 保存时用配置的模型标准化（`options/utils/normalizeLang.ts`），失败则原样存。
+- 模型列表：`GET {baseUrl}/models`，头 `Authorization: Bearer <apiKey>`。
+- manifest 权限仅 `activeTab` + `storage`；LLM 端点走 `optional_host_permissions`（http/https）。新增域名沿用该模式。
 
 ## 编码约定
 
-- **Biome**：tab 缩进、**CRLF** 行尾、双引号、分号、尾逗号、80 列宽。提交前跑 `pnpm format`。
-- **别名**：`@/*` → `app/*`（tsconfig 与 addfox.config.ts 均已配置）。
-- **注释**：跟随现有代码风格，用中文注释解释"为什么"。
-- **commit message**：中文 + conventional 前缀（feat/fix/chore/docs），见 git log。
-- **样式**：组件用 `Component.module.css`（如 `Button.module.css`）。
+- Biome：tab、**CRLF**、双引号、分号、尾逗号、80 列。写完跑 `pnpm format`。
+- 别名 `@/*` → `app/*`（tsconfig + addfox.config.ts 已配）。
+- 注释中文，只写"为什么"（非常规做法/踩坑原因）；不复述代码。
+- 组件样式 `Component.module.css`。
+- commit：中文 + conventional 前缀（feat/fix/chore/docs）。
 
-## 目录与入口
+## 禁忌（踩过的坑）
 
-- 入口仅三个：`app/background/index.ts`、`app/content/index.ts`、`app/options/index.tsx`（无 popup/sidepanel）。addfox 自动发现入口目录，新增/重命名入口目录需保证结构一致。
-- `.addfox/llms.txt`、`.addfox/meta.md` 为 addfox 自动生成（勿手改），可用来查入口映射与构建产物。
-- `addfox.config.ts` 的 `browserPath` 指向本机浏览器路径（Chromium / LibreWolf），是机器相关的，换机器需调整。
+- 禁把段间分隔写成换行（只用 `{{segN}}`）；禁手写 `{{segN}}`/`{{var}}` 字面（只从 `protocol.ts` 派生）。
+- 禁在 content bundle 引 Solid 组件 / CSS module（toast 走 `utils/toast.ts` + 纯 DOM）。
+- 禁用 `defineShadowContentUI` 或自定义元素挂 UI（Firefox 内容脚本与页面共享 `customElements`，升级后的宿主原型链会触发 Xray 报错；用普通 `div` + `attachShadow`）。
+- 禁在 content 里 monkey-patch `history.pushState` 做路由检测（隔离世界拦不到页面调用）。
+- 禁给 `range`/锚点做「先改 DOM 再遍历」：TreeWalker 是 live 的，先收集后改。
+- 禁把 `prompt.ts` 的两条规则改成条件注入；禁让 `messages` 以 assistant 结尾；reminder 用 `role: "user"`（不插中间 system）。
+
+## 测试覆盖（改什么就跑什么）
+
+`__tests__/`：`protocol.test.ts`（标记/解析）、`segmentPlan.test.ts`（段计划/换行）、`textFilter.test.ts`（预筛）、`translationSession.test.ts`（对齐/宽容丢弃/重试/失败/历史交接）、`retryReminder.test.ts`（诊断文案）、`pageContext.test.ts`（冻结/累积）、`language.test.ts`、`normalizeLang.test.ts`。
+
+改 `protocol` / `segmentPlan` / `TranslationSession` / `InlineTranslator.getResultRows` / `retryReminder` / `pageContext` 必须同步补测；`InlineTranslatorController` 新增方法会让测试里的 fake 编译失败（预期行为）。
