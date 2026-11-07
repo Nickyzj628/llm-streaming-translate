@@ -1,8 +1,12 @@
-import { stream } from "@nickyzj2023/ai";
+import { type Message, stream } from "@nickyzj2023/ai";
 import { extractErrorMessage } from "@nickyzj2023/utils";
 import type browser from "webextension-polyfill";
 import { buildSystemPrompt } from "@/background/prompt";
-import type { StreamTranslatePortMessage } from "@/types/messages";
+import type {
+	ChatTurn,
+	StreamTranslatePortMessage,
+	StreamTranslateRetry,
+} from "@/types/messages";
 import { getStorage } from "@/utils/storage";
 
 /** 单次流式翻译的控制句柄：abort() 立即中止底层 HTTP 连接 */
@@ -47,6 +51,8 @@ export function startStreamTranslation(
 	text: string,
 	port: browser.Runtime.Port,
 	pageMeta?: { title: string; description: string },
+	history: ChatTurn[] = [],
+	retry?: StreamTranslateRetry,
 ): StreamTranslationController {
 	const controller = new AbortController();
 	void run();
@@ -89,10 +95,27 @@ export function startStreamTranslation(
 				}
 			}
 
-			const messages: Array<{ role: "system" | "user"; content: string }> = [
+			// 消息序列（前缀逐字节稳定，便于供应商 prompt cache 命中）：
+			//   system → [页级历史] → 本次 user
+			// 重试时在本次 user 之前插入「上一轮实际输入 + 它的原始输出 + 系统诊断」，
+			// 让模型看到自己错在哪；诊断作为独立 user 消息（见 utils/retryReminder.ts）。
+			const messages: Message[] = [
 				{ role: "system", content: buildSystemPrompt(pageMeta, targetLang) },
-				{ role: "user", content: text },
+				...history.map(
+					(turn): Message => ({
+						role: turn.role,
+						content: turn.content,
+					}),
+				),
 			];
+			if (retry) {
+				messages.push(
+					{ role: "user", content: retry.previousInput },
+					{ role: "assistant", content: retry.previousOutput },
+					{ role: "user", content: retry.reminder },
+				);
+			}
+			messages.push({ role: "user", content: text });
 
 			// options.body 会被平铺进 /chat/completions 请求体（上游支持），
 			// 所以设置项 body 的额外字段照旧生效

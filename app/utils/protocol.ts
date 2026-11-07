@@ -111,7 +111,12 @@ const INCOMPLETE_PROTOCOL_TAIL_RE = new RegExp(
 	"u",
 );
 
-function stripIncompleteSegmentPrefix(text: string): string {
+/**
+ * 剥离段尾"恰好是某个协议标记未完成前缀"的部分。
+ * 流式解析用它防脏字符；content 端把上一轮原始输出交给重试请求时也要用它，
+ * 否则模型会看到一个半个的 {{seg，学着输出半个。
+ */
+export function stripIncompleteSegmentPrefix(text: string): string {
 	const match = text.match(INCOMPLETE_PROTOCOL_TAIL_RE);
 	return match ? text.slice(0, -match[0].length) : text;
 }

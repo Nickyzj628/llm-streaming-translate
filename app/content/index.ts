@@ -6,13 +6,21 @@ import {
 	show as showButton,
 } from "@/content/FloatingButton";
 import { createInlineTranslator } from "@/content/InlineTranslator";
+import {
+	appendHistory,
+	clearHistory,
+	getHistory,
+	readPageMetaOnce,
+} from "@/content/pageContext";
 import { shouldOfferTranslation } from "@/content/selectionFilter";
 import { isAlreadyTargetLanguage } from "@/content/selectionLanguage";
 import {
 	startTranslationSession,
 	type TranslationSession,
 } from "@/content/TranslationSession";
+import { mountToast } from "@/content/toast";
 import { streamTranslate } from "@/utils/streamTranslate";
+import { showToast } from "@/utils/toast";
 
 /**
  * content 端入口：事件转发 + 当前会话的持有者。
@@ -50,14 +58,21 @@ function getSelectedText(): string {
  * 读取当前网页的元数据（title + meta description），供 background 注入 system prompt
  * 帮助模型理解页面主题与语境。description 为空时省略该字段。
  * 截断保护：避免超长 title/description 塞爆 prompt。
+ * 注意：只在页面首次翻译时真读一次，之后永久复用快照（readPageMetaOnce）——
+ * 标题一变就会让 system 变、整段历史缓存失效，见 pageContext.ts 的取舍说明。
  */
-function getPageMeta(): { title: string; description: string } {
+function readDocumentMeta(): { title: string; description: string } {
 	const title = document.title.trim().slice(0, 200);
 	const descEl = document.querySelector<HTMLMetaElement>(
 		'meta[name="description"], meta[property="og:description"]',
 	);
 	const description = (descEl?.content ?? "").trim().slice(0, 300);
 	return { title, description };
+}
+
+/** 冻结后的网页元数据（页面首次翻译时快照） */
+function getPageMeta(): { title: string; description: string } {
+	return readPageMetaOnce(readDocumentMeta);
 }
 
 /** 翻译一个选区 Range（点击浮动按钮触发） */
@@ -80,6 +95,18 @@ function startTranslation(range: Range): void {
 		// 端口客户端由入口注入：会话本身不静态依赖端口模块（可单测）
 		transport: streamTranslate,
 		getPageMeta,
+		// 页级历史：会话开始时抓快照，整场会话（含重试）复用
+		getHistory,
+		// 成功：把这一对干净的对话写进页级历史，供后续翻译当语境
+		onTranslated: ({ user, assistant }) => {
+			appendHistory({ role: "user", content: user });
+			appendHistory({ role: "assistant", content: assistant });
+		},
+		// 失败：清空历史并提示（不清 pageMeta，system 前缀保持稳定）
+		onFailed: (message) => {
+			clearHistory();
+			showToast(message, "error");
+		},
 		// 会话自然结束（成功/失败/放弃）时清活跃句柄，且必须确认它仍是当前会话——
 		// 旧会话的迟到回调不能把新会话的句柄清掉（闭包版踩过的时序 bug）
 		onEnded: () => {
@@ -111,6 +138,8 @@ function mountShadowUI(): ShadowRoot {
 
 const shadowRoot = mountShadowUI();
 setParent(shadowRoot);
+// 失败提示也画在这个 Shadow DOM 里：与浮动按钮同域，不受页面样式影响
+mountToast(shadowRoot);
 
 function handleMouseDown(e: MouseEvent): void {
 	if (isButtonElement(e.target as Node)) return;

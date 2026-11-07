@@ -26,7 +26,13 @@ export function onStreamTranslatePort(port: browser.Runtime.Port): void {
 		// 同端口重复 START：先打断上一会话再开新会话，
 		// 避免两个流交错写同一端口、译文互相污染
 		current?.abort();
-		current = startStreamTranslation(message.text, port, message.pageMeta);
+		current = startStreamTranslation(
+			message.text,
+			port,
+			message.pageMeta,
+			message.history,
+			message.retry,
+		);
 	};
 
 	const disconnectHandler = (): void => {

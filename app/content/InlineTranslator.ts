@@ -171,6 +171,12 @@ export interface InlineTranslatorController {
 	finish: () => void;
 	/** 回滚：translate 段恢复原文、preserve 段还原元素，还原页面原始 DOM */
 	destroy: () => void;
+	/**
+	 * 各段最终的协议行内容，供成功收尾时合成历史对话的 assistant 轮：
+	 * 已写回的段取译文，未写回的段为空串，preserve 段取原占位行（{{var}}）。
+	 * finish() 之后调用也安全：锚点已 unwrap，但离体的 span 仍保留 textContent。
+	 */
+	getResultRows: () => string[];
 }
 
 export function createInlineTranslator(
@@ -239,6 +245,18 @@ export function createInlineTranslator(
 		}
 	}
 
+	/**
+	 * 各段最终的协议行内容（成功收尾后合成历史对话用）。
+	 * preserve 段始终抛回原占位行：块内容从没被模型改写，历史上那个碎片就是 {{var}}。
+	 */
+	function getResultRows(): string[] {
+		return segments.map((info) => {
+			if (info.kind === "preserve") return info.row;
+			if (!info.written) return "";
+			return info.target.textContent ?? "";
+		});
+	}
+
 	// 空选区不用特判：buildSegments 返回空数组时下面几个循环天然什么都不做，
 	// 是否发请求由上层看 segmentCount 决定
 	return {
@@ -248,5 +266,6 @@ export function createInlineTranslator(
 		restoreSegment,
 		finish,
 		destroy,
+		getResultRows,
 	};
 }

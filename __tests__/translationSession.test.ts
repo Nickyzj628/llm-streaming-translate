@@ -11,15 +11,16 @@ import {
 	type StreamTransport,
 	startTranslationSession,
 } from "@/content/TranslationSession";
+import type { ChatTurn } from "@/types/messages";
 import type { StreamTranslateOptions } from "@/utils/streamTranslate";
 
 /**
  * 一次会话的对齐 / 重试 / 收尾单测。
  *
  * 为什么测这些：{{segN}} 序号对齐和"从错位段起重译"是整条链路最容易写漂、
- * 又只有真跑一遍长文才看得出来的部分——重构前它散在 InlineTranslator 与
- * TranslationSession 两边、靠回调互相调用，且零覆盖。这里用假 translator
- * 加假端口流把每条分支钉死：序号校验、段数兜底、重试上限、收尾与回滚。
+ * 又只有真跑一遍长文才看得出来的部分。这里用假 translator 加假端口流把每条
+ * 分支钉死：序号校验、宽容丢弃重述段、段数兜底、会话式重试的消息内容、
+ * 重试上限、成功/失败交给入口的上下文事件。
  *
  * 怎么做到不碰浏览器：会话的端口客户端由入口注入（StreamTransport），
  * 所以这里塞个假流即可——不用 mock 模块，也不会加载 webextension-polyfill。
@@ -71,6 +72,14 @@ function createFakeTranslator(rows: string[]) {
 		destroy: () => {
 			destroyCount++;
 		},
+		// 每段最后写入的内容（真实实现取锚点 textContent，这里取最后一次记账）
+		getResultRows: () =>
+			rows.map((_, i) => {
+				for (let k = written.length - 1; k >= 0; k--) {
+					if (written[k].index === i) return written[k].text;
+				}
+				return "";
+			}),
 	};
 
 	return {
@@ -86,19 +95,38 @@ function pageMeta() {
 	return { title: "标题", description: "描述" };
 }
 
+interface SessionHooks {
+	history?: () => ChatTurn[];
+	onTranslated?: (turn: { user: string; assistant: string }) => void;
+	onFailed?: (message: string) => void;
+	onEnded?: () => void;
+	getPageMeta?: () => { title: string; description: string };
+}
+
 /** 起一次会话，把常用句柄一起交出来 */
-function startSession(rows: string[], onEnded: () => void = () => {}) {
+function startSession(rows: string[], hooks: SessionHooks = {}) {
 	const fake = createFakeTranslator(rows);
 	const { transport, streams } = createFakeTransport();
+	const translated: Array<{ user: string; assistant: string }> = [];
+	const failures: string[] = [];
 
 	startTranslationSession({
 		translator: fake.translator,
 		transport,
-		getPageMeta: pageMeta,
-		onEnded,
+		getPageMeta: hooks.getPageMeta ?? pageMeta,
+		getHistory: hooks.history ?? (() => []),
+		onTranslated: (turn) => {
+			translated.push(turn);
+			hooks.onTranslated?.(turn);
+		},
+		onFailed: (message) => {
+			failures.push(message);
+			hooks.onFailed?.(message);
+		},
+		onEnded: hooks.onEnded ?? (() => {}),
 	});
 
-	return { ...fake, streams };
+	return { ...fake, streams, translated, failures };
 }
 
 beforeEach(() => {
@@ -113,8 +141,10 @@ afterEach(() => {
 describe("正常流", () => {
 	it("按 {{segN}} 序号逐段写回，收到 DONE 后收尾", () => {
 		let ended = 0;
-		const s = startSession(["甲", "乙"], () => {
-			ended++;
+		const s = startSession(["甲", "乙"], {
+			onEnded: () => {
+				ended++;
+			},
 		});
 
 		expect(s.streams.length).toBe(1);
@@ -218,34 +248,80 @@ describe("正常流", () => {
 	});
 });
 
+describe("页级上下文交接", () => {
+	it("成功时交出一对干净的对话（原始输入 + 按绝对序号重拼的输出）", () => {
+		const s = startSession(["甲", "乙"]);
+
+		s.streams[0].options.onChunk("一{{seg1}}二{{seg2}}");
+		s.streams[0].options.onDone();
+
+		expect(s.translated).toEqual([
+			{ user: "甲{{seg1}}乙{{seg2}}", assistant: "一{{seg1}}二{{seg2}}" },
+		]);
+		expect(s.failures).toEqual([]);
+	});
+
+	it("历史快照整场会话复用，且随每次请求发出", () => {
+		let historyReads = 0;
+		const history: ChatTurn[] = [
+			{ role: "user", content: "旧{{seg1}}" },
+			{ role: "assistant", content: "旧译{{seg1}}" },
+		];
+		const s = startSession(["甲", "乙"], {
+			history: () => {
+				historyReads++;
+				return history;
+			},
+		});
+
+		// 重试会再发一次请求，但历史只取一次快照
+		s.streams[0].options.onChunk("一{{seg1}}二{{seg3}}");
+		expect(historyReads).toBe(1);
+		expect(s.streams[0].options.history).toEqual(history);
+		expect(s.streams[1].options.history).toEqual(history);
+	});
+
+	it("重试请求带上一轮的输入/输出与诊断，并把子文本单独作为 user", () => {
+		const s = startSession(["甲", "乙", "丙"]);
+
+		// 第 2 段给了 3 号 → 从下标 1 起错位
+		s.streams[0].options.onChunk("一{{seg1}}二{{seg3}}");
+		expect(s.streams.length).toBe(2);
+
+		const retry = s.streams[1].options.retry;
+		expect(retry).toBeDefined();
+		expect(retry?.previousInput).toBe("甲{{seg1}}乙{{seg2}}丙{{seg3}}");
+		expect(retry?.previousOutput).toBe("一{{seg1}}二{{seg3}}");
+		expect(retry?.reminder).toContain("第 2 个碎片");
+		// 本次要译的是后半段子文本，序号仍是绝对的
+		expect(s.streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
+		// 首次请求没有重试上下文
+		expect(s.streams[0].options.retry).toBeUndefined();
+	});
+});
+
 describe("断点重试", () => {
 	it("序号错位时只重译后半段，子文本保持绝对序号", () => {
 		let metaCalls = 0;
-		const fake = createFakeTranslator(["甲", "乙", "丙"]);
-		const { transport, streams } = createFakeTransport();
-
-		startTranslationSession({
-			translator: fake.translator,
-			transport,
+		const s = startSession(["甲", "乙", "丙"], {
 			getPageMeta: () => {
 				metaCalls++;
 				return pageMeta();
 			},
-			onEnded: () => {},
 		});
 
 		// 第 1 段对齐
-		streams[0].options.onChunk("一{{seg1}}");
+		s.streams[0].options.onChunk("一{{seg1}}");
 		// 第 2 段序号本该是 2，模型给了 3 → 判定从下标 1 起错位
-		streams[0].options.onChunk("二{{seg3}}");
+		s.streams[0].options.onChunk("二{{seg3}}");
 
-		expect(streams[0].aborted).toBe(true);
-		expect(fake.restored).toEqual([1, 2]);
+		expect(s.streams[0].aborted).toBe(true);
+		expect(s.restored).toEqual([1, 2]);
 
 		// 重新发起：只发后半段，序号仍是绝对的 2 / 3
-		expect(streams.length).toBe(2);
-		expect(streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
-		// 语境每次发起都重读（页面标题可能变了）
+		expect(s.streams.length).toBe(2);
+		expect(s.streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
+		// 元数据回调每次发起仍会被调用，但入口交给它的是冻结快照（见 pageContext）
 		expect(metaCalls).toBe(2);
 	});
 
@@ -262,6 +338,25 @@ describe("断点重试", () => {
 		expect(s.destroyed()).toBe(0);
 	});
 
+	it("模型无视「只译后半段」、从 1 重述全文时，宽容丢弃已译部分", () => {
+		const s = startSession(["甲", "乙", "丙"]);
+
+		s.streams[0].options.onChunk("一{{seg1}}二{{seg3}}");
+		expect(s.streams.length).toBe(2);
+
+		// 重试流把全文从头重述一遍：1 / 2 段属于已译部分，直接丢弃；
+		// 只有 3 号之后的段才写回，且不会被判成又想重试
+		s.streams[1].options.onChunk("一{{seg1}}二{{seg2}}三{{seg3}}");
+		s.streams[1].options.onDone();
+
+		expect(s.streams.length).toBe(2);
+		expect(s.written.slice(-2)).toEqual([
+			{ index: 1, text: "二" },
+			{ index: 2, text: "三" },
+		]);
+		expect(s.finished()).toBe(1);
+	});
+
 	it("末尾吞段（输出段数不足）从已对齐处续译", () => {
 		const s = startSession(["甲", "乙", "丙"]);
 
@@ -272,6 +367,7 @@ describe("断点重试", () => {
 		expect(s.streams.length).toBe(2);
 		expect(s.restored).toEqual([1, 2]);
 		expect(s.streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
+		expect(s.streams[1].options.retry?.reminder).toContain("输入共有 3 个碎片");
 		expect(s.destroyed()).toBe(0);
 	});
 
@@ -296,8 +392,10 @@ describe("断点重试", () => {
 
 	it("连续错位到上限后放弃并回滚原文", () => {
 		let ended = 0;
-		const s = startSession(["甲"], () => {
-			ended++;
+		const s = startSession(["甲"], {
+			onEnded: () => {
+				ended++;
+			},
 		});
 
 		// 每轮流都喂错误序号（期望 1，给 9），一路撞到 MAX_ATTEMPTS
@@ -310,56 +408,67 @@ describe("断点重试", () => {
 		expect(s.streams[5].aborted).toBe(true);
 		expect(s.destroyed()).toBe(1);
 		expect(ended).toBe(1);
+		// 放弃也要交给入口：清历史 + 提示
+		expect(s.failures).toHaveLength(1);
+		expect(s.failures[0]).toContain("错位");
+		expect(s.translated).toEqual([]);
 	});
 });
 
 describe("收尾与回滚", () => {
 	it("ERROR 时回滚原文并结束", () => {
 		let ended = 0;
-		const s = startSession(["甲"], () => {
-			ended++;
+		const s = startSession(["甲"], {
+			onEnded: () => {
+				ended++;
+			},
 		});
 
 		s.streams[0].options.onError("boom");
 		expect(s.destroyed()).toBe(1);
 		expect(s.finished()).toBe(0);
+		expect(s.failures).toEqual(["boom"]);
+		expect(s.translated).toEqual([]);
 		expect(ended).toBe(1);
 	});
 
 	it("端口异常断开时回滚原文并结束", () => {
 		let ended = 0;
-		const s = startSession(["甲"], () => {
-			ended++;
+		const s = startSession(["甲"], {
+			onEnded: () => {
+				ended++;
+			},
 		});
 
 		s.streams[0].options.onDisconnect?.();
 		expect(s.destroyed()).toBe(1);
+		expect(s.failures).toHaveLength(1);
 		expect(ended).toBe(1);
 	});
 });
 
 describe("abort", () => {
 	it("回滚原文、中止在途流，重复调用是幂等空操作", () => {
-		let ended = 0;
 		const fake = createFakeTranslator(["甲"]);
 		const { transport, streams } = createFakeTransport();
-
-		const session = startTranslationSession({
+		const handle = startTranslationSession({
 			translator: fake.translator,
 			transport,
 			getPageMeta: pageMeta,
-			onEnded: () => {
-				ended++;
+			getHistory: () => [],
+			onTranslated: () => {},
+			// 主动打断属于用户重新划词：绝不该被当成失败
+			onFailed: () => {
+				throw new Error("主动打断不应算失败");
 			},
+			onEnded: () => {},
 		});
 
-		session.abort();
+		handle.abort();
 		expect(fake.destroyed()).toBe(1);
 		expect(streams[0].aborted).toBe(true);
-		expect(ended).toBe(1);
 
-		session.abort();
+		handle.abort();
 		expect(fake.destroyed()).toBe(1);
-		expect(ended).toBe(1);
 	});
 });

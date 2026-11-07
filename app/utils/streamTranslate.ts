@@ -9,8 +9,10 @@
  */
 import browser from "webextension-polyfill";
 import {
+	type ChatTurn,
 	STREAM_TRANSLATE_PORT,
 	type StreamTranslatePortMessage,
+	type StreamTranslateRetry,
 } from "@/types/messages";
 
 export interface StreamTranslateCallbacks {
@@ -32,6 +34,10 @@ export interface StreamTranslateOptions extends StreamTranslateCallbacks {
 	text: string;
 	/** 网页元数据（content 端传入） */
 	pageMeta?: { title: string; description: string };
+	/** 页级历史（此前成功的翻译对），原样透传给 background 拼进 messages */
+	history?: ChatTurn[];
+	/** 重试上下文（首次请求不传） */
+	retry?: StreamTranslateRetry;
 }
 
 export interface StreamTranslateHandle {
@@ -96,6 +102,8 @@ export function streamTranslate(
 			type: "START",
 			text: options.text,
 			...(options.pageMeta ? { pageMeta: options.pageMeta } : {}),
+			...(options.history ? { history: options.history } : {}),
+			...(options.retry ? { retry: options.retry } : {}),
 		});
 	} catch {
 		cleanup(true);
