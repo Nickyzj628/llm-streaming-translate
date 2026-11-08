@@ -21,8 +21,10 @@ import {
  *
  * 网页元数据（title/description）作为"网页背景"注入，帮助模型理解页面主题与语境：
  * pageMeta 整体缺失时整段不注入；字段为空串时以"（无）"占位（保持既有行为）。
- * 注意 pageMeta 由 content 端在页面首次翻译时冻结（见 content/pageContext.ts）：
- * 标题后续再变也不会改这份 system，为的是前缀缓存命中。
+ * 注意 pageMeta 由 content 端在会话开始时给快照（见 content/pageContext.ts）：
+ * 同一页里标题变了也不会改这份 system（重试尤其不换），为的是前缀缓存命中；
+ * 标题真的变了（换页）时 content 端会连历史一起清空，所以这里不存在
+ * "system 是上一页、历史是这一页"的混搭。
  *
  * 以下两条规则无条件存在（哪怕这次请求根本没带历史/诊断）：只在重试时临时加，
  * 会让首次请求与重试的 system 不同，前缀从第一个 token 起就 cache miss。

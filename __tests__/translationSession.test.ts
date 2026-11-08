@@ -321,8 +321,9 @@ describe("断点重试", () => {
 		// 重新发起：只发后半段，序号仍是绝对的 2 / 3
 		expect(s.streams.length).toBe(2);
 		expect(s.streams[1].options.text).toBe("乙{{seg2}}丙{{seg3}}");
-		// 元数据回调每次发起仍会被调用，但入口交给它的是冻结快照（见 pageContext）
-		expect(metaCalls).toBe(2);
+		// 元数据只在会话开始时取一次：重试（新的一轮流）不重取，
+		// 否则标题中途一变，同一次会话的重试就会换 system，前缀稳定性直接破掉
+		expect(metaCalls).toBe(1);
 	});
 
 	it("重试流按后半段段数收尾，不会被当成漏段再重试", () => {

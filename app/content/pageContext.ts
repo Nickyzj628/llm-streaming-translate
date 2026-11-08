@@ -9,9 +9,10 @@
  * 两条策略（见 AGENTS/对话记录）：
  * - **历史只在失败时清空**：不做条数/字符预算，也不按 SPA 路由变化清空，
  *   目的是让每次请求的 messages 前缀逐字节稳定，供应商的 prompt cache 才能命中；
- * - **pageMeta 只在首次翻译时读一次、之后永久冻结**：标题/描述一变（未读数、
- *   播放器曲目、SPA 异步改标题）就会让 system 变、整段历史 cache miss，为前缀
- *   缓存利用率放弃"语境永远最新"。
+ * - **pageMeta 首次翻译时快照，之后只在"标题变了"时重新快照**：标题是"页面身份"
+ *   的便宜代理，换页就整份上下文（历史 + system）一起归零，避免拿上一页的语境去
+ *   翻这一页的内容。只比标题，不监听 DOM 事件——SPA 很常见地每 tick 重设同一个
+ *   标题，按事件清会把上下文清成筛子。
  *
  * 失败的翻译不写入历史：半截译文/半截原文喂给后续翻译只会带偏术语与语气。
  */
@@ -24,17 +25,33 @@ let turns: ChatTurn[] = [];
 let pageMeta: { title: string; description: string } | null = null;
 
 /**
- * 读取网页元数据，但只读一次：首次翻译时快照，之后无论页面怎么变都返回同一份。
+ * 取网页元数据：首次翻译时快照；之后每次开新会话先比"页面标题"，变了就当换了页面
+ * ——清空历史对话并重新快照（system prompt 同步换成新页面的背景）。
+ *
+ * 为什么只比标题、且由本函数的返回值提供比较基准：read() 是同一条取值路径，
+ * 「判断是否换页」与「写进 prompt 的标题」永远是同一个值，不会出现一边 trim/
+ * 截断、一边用原文的比较错位。description 单独变化不重置（异步补全很常见）。
+ *
+ * 为什么不在换页时只换 system、保留历史：历史里那些 user/assistant 轮属于上一页，
+ * 留着既会污染语境，也会让"前缀稳定"变成假的（system 变了，前缀本来就已经 miss）。
+ *
  * @param read 真正读 DOM 的函数（便于单测注入，也避免本模块依赖 document）
  */
-export function readPageMetaOnce(
+export function readPageMeta(
 	read: () => {
 		title: string;
 		description: string;
 	},
 ): { title: string; description: string } {
+	const next = read();
 	if (pageMeta === null) {
-		pageMeta = read();
+		pageMeta = next;
+		return pageMeta;
+	}
+	if (next.title !== pageMeta.title) {
+		// 换页：上一页的对话对没有复用价值，留着只会把模型带偏
+		clearHistory();
+		pageMeta = next;
 	}
 	return pageMeta;
 }

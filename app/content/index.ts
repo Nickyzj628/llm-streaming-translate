@@ -10,7 +10,7 @@ import {
 	appendHistory,
 	clearHistory,
 	getHistory,
-	readPageMetaOnce,
+	readPageMeta,
 } from "@/content/pageContext";
 import { shouldOfferTranslation } from "@/content/selectionFilter";
 import { isAlreadyTargetLanguage } from "@/content/selectionLanguage";
@@ -68,8 +68,8 @@ function getSelectedText(): string {
  * 读取当前网页的元数据（title + meta description），供 background 注入 system prompt
  * 帮助模型理解页面主题与语境。description 为空时省略该字段。
  * 截断保护：避免超长 title/description 塞爆 prompt。
- * 注意：只在页面首次翻译时真读一次，之后永久复用快照（readPageMetaOnce）——
- * 标题一变就会让 system 变、整段历史缓存失效，见 pageContext.ts 的取舍说明。
+ * 归一化（trim + 截断）统一在这里做：pageContext 用同一份返回值判断"是否换页"，
+ * 所以比较基准与写进 prompt 的标题永远是同一个值。
  */
 function readDocumentMeta(): { title: string; description: string } {
 	const title = document.title.trim().slice(0, 200);
@@ -80,9 +80,12 @@ function readDocumentMeta(): { title: string; description: string } {
 	return { title, description };
 }
 
-/** 冻结后的网页元数据（页面首次翻译时快照） */
+/**
+ * 网页元数据（页级上下文的一部分）：首次翻译时快照，之后每次开新会话先比标题——
+ * 标题变了就看作用户换了一页，历史对话与这份快照一起清空重读（见 pageContext.ts）。
+ */
 function getPageMeta(): { title: string; description: string } {
-	return readPageMetaOnce(readDocumentMeta);
+	return readPageMeta(readDocumentMeta);
 }
 
 /**

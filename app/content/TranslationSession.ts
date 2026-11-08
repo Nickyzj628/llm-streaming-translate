@@ -56,7 +56,8 @@ const DISCONNECT_MESSAGE = "与后台的连接已断开，请重试";
  *
  * @param options.translator 已建好锚点的原地翻译器（本会话接管其生命周期）
  * @param options.transport 发起一次流的方式（入口注入真实端口客户端）
- * @param options.getPageMeta 读取（已冻结的）网页元数据
+ * @param options.getPageMeta 读取网页元数据；只在会话开始时调用一次——它可能因标题
+ *   变化而清空历史，所以必须先于 getHistory 生效（入口侧已保证顺序）
  * @param options.getHistory 页级历史快照的来源
  * @param options.onTranslated 翻译成功：交出历史对话对
  * @param options.onFailed 翻译失败：交出给用户看的文案
@@ -86,6 +87,11 @@ export function startTranslationSession(options: {
 	const totalSegments = rows.length;
 	/** 本次翻译的完整 user 文本（成功后作为历史里的 user 轮，重试时也用它当"原题"） */
 	const fullText = joinSegmentRows(rows, 0);
+	/**
+	 * 网页元数据：整场会话（含每次重试）用同一份，且必须**先于**历史快照取——
+	 * 标题变了会连带清空历史（换页），顺序反了就会把上一页的对话当成这一页的语境。
+	 */
+	const pageMeta = getPageMeta();
 	/**
 	 * 历史快照：整场会话（含每次重试）都用同一份，别的翻译中途结束也不会影响本次。
 	 * 复制一份而不是引用：入口在失败时会清空历史，引用会让在途请求的消息前后不一致。
@@ -316,7 +322,7 @@ export function startTranslationSession(options: {
 
 		currentStream = transport({
 			text,
-			pageMeta: getPageMeta(),
+			pageMeta,
 			history,
 			retry,
 			onChunk: (chunk) => {

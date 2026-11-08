@@ -33,7 +33,7 @@
 | `content/segmentPlan.ts` | 段计划纯逻辑（协议行、换行策略） | 有单测 |
 | `content/InlineTranslator.ts` | 建锚点 + `writeSegment/restoreSegment/finish/destroy/getResultRows` | 不碰协议解析 |
 | `content/TranslationSession.ts` | 会话主干：发请求、对齐、重试、收尾 | 有单测；状态全在闭包 |
-| `content/pageContext.ts` | 页级历史 + 冻结 `pageMeta` | 单例，模块级状态 |
+| `content/pageContext.ts` | 页级历史 + `pageMeta`（标题变化即整份上下文重置） | 单例，模块级状态 |
 | `content/toast.ts` | toast 纯 DOM 渲染（进 Shadow DOM） | 禁引 Solid/CSS module |
 | `background/prompt.ts` | system prompt（模型侧协议契约 + 两条固定规则） | 与 protocol 文案一致 |
 | `background/StreamTranslator.ts` | messages 组装 + `stream()` + AbortController | START 字段变化时同步 |
@@ -60,8 +60,9 @@
 ## 请求 / 上下文规格（前缀稳定性是硬性目标）
 
 - messages：`[system] [...history] [user text]`；重试时在末条 user 前插 `[user previousInput][assistant previousOutput][user reminder]`。
-- `pageMeta`：**本页首次翻译时读一次后永久冻结**（`pageContext.readPageMetaOnce`）。禁止改回"每次重读"——标题变 → system 变 → 整段历史 cache miss。
-- history：append-only；只在**请求失败**时清空（`onFailed` → `clearHistory`+`showToast`）。禁止加条数/字符预算、禁止按 SPA 路由清。`abort()`（只在页面卸载时发生）不清历史、不提示；新的一次翻译请求不 abort 当前会话，而是排队等它收尾。
+- `pageMeta`：首次翻译时快照；**每次开新会话先比一次归一化标题**（`readPageMeta`），标题变了就当换页 → 清历史 + 重读元数据（system 跟着换）。比较基准与写进 prompt 的标题必须是同一份 `readDocumentMeta()` 返回值，禁止另算一份（trim/截断口径不一致会让长标题永远"变化"）。只比 `title`，`description` 单独变不重置。禁止监听 DOM mutation / 路由来重置：SPA 常常每 tick 重设同一个标题，按事件清会把上下文清成筛子。
+- 会话内**不重取** `pageMeta` 与 `history`：两者在 `startTranslationSession` 开头各取一次（顺序是 pageMeta 在前，它可能清空历史），整场会话含重试都用同一份，否则重试会换 system、前缀稳定性直接破。
+- history：append-only；只在**请求失败**时清空（`onFailed` → `clearHistory`+`showToast`）。禁止加条数/字符预算、禁止按 URL/路由清（换页只认标题变化这一条信号，见上）。`abort()`（只在页面卸载时发生）不清历史、不提示；新的一次翻译请求不 abort 当前会话，而是排队等它收尾。
 - 成功一次追加一对：`user = joinSegmentRows(rows,0)`，`assistant = joinSegmentRows(getResultRows(),0)`（重拼，非原始流）。失败分支不入历史。
 - prompt 里关于「历史编号与本次无关」「`<system-reminder>` 非待译内容」的两条规则**无条件存在**（条件化会让首次/重试 system 不同 → 前缀失效）。
 - `StreamTranslator` 用 `@nickyzj2023/ai` 的 `stream(model, messages, [], { signal, body })`（内部 fetcher + parseSSE，**不是** openai SDK）；`options.body` 平铺进 `/chat/completions`。错误已被 `extractErrorMessage` 归一（fetcher 丢弃 HTTP 状态码，只留 `statusText || body`）。
