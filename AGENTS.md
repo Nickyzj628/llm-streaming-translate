@@ -61,7 +61,7 @@
 
 - messages：`[system] [...history] [user text]`；重试时在末条 user 前插 `[user previousInput][assistant previousOutput][user reminder]`。
 - `pageMeta`：**本页首次翻译时读一次后永久冻结**（`pageContext.readPageMetaOnce`）。禁止改回"每次重读"——标题变 → system 变 → 整段历史 cache miss。
-- history：append-only；只在**请求失败**时清空（`onFailed` → `clearHistory`+`showToast`）。禁止加条数/字符预算、禁止按 SPA 路由清。`abort()`（用户重新划词）不清历史、不提示。
+- history：append-only；只在**请求失败**时清空（`onFailed` → `clearHistory`+`showToast`）。禁止加条数/字符预算、禁止按 SPA 路由清。`abort()`（只在页面卸载时发生）不清历史、不提示；新的一次翻译请求不 abort 当前会话，而是排队等它收尾。
 - 成功一次追加一对：`user = joinSegmentRows(rows,0)`，`assistant = joinSegmentRows(getResultRows(),0)`（重拼，非原始流）。失败分支不入历史。
 - prompt 里关于「历史编号与本次无关」「`<system-reminder>` 非待译内容」的两条规则**无条件存在**（条件化会让首次/重试 system 不同 → 前缀失效）。
 - `StreamTranslator` 用 `@nickyzj2023/ai` 的 `stream(model, messages, [], { signal, body })`（内部 fetcher + parseSSE，**不是** openai SDK）；`options.body` 平铺进 `/chat/completions`。错误已被 `extractErrorMessage` 归一（fetcher 丢弃 HTTP 状态码，只留 `statusText || body`）。
@@ -98,6 +98,11 @@
 - 禁在 content 里 monkey-patch `history.pushState` 做路由检测（隔离世界拦不到页面调用）。
 - 禁给 `range`/锚点做「先改 DOM 再遍历」：TreeWalker 是 live 的，先收集后改。
 - 禁把 `prompt.ts` 的两条规则改成条件注入；禁让 `messages` 以 assistant 结尾；reminder 用 `role: "user"`（不插中间 system）。
+- 禁在 `mouseup`/`mousedown`/`selectionchange` 里调 `abortCurrent()`：任意点击都会触发 mouseup，等于"点一下回滚整场翻译"。
+- 禁并行会话：锚点、页级历史、toast 都是单例，并行会互踩（重叠选区时后建的锚点会被先建的 `textContent` 写回整块删掉）。点按钮只走 `requestTranslation`：空闲即开跑，忙则排队（latest-wins 只留一单），由 `onEnded` → `startQueuedTranslation` 接力；建新锚点前 DOM 里必须没有别人的锚点。
+- 排队的 Range 睡过等待期，开跑前必须验 `isConnected` + 非 collapsed + `range.toString()` 与排队时的文本一致，对不上就丢弃并提示重划（禁替用户翻变了样的文本）。
+- 锚点（`span.llm-selected`）必须带 `user-select: none`：锚点里的文本会被 `textContent` 整体替换、被打断时整块回滚，选区落在里面活不过一次写入。靠 CSS 让"翻译中的文本暂时选不中"，就省掉了在 `mouseup` 里判"选区压在不在旧会话上"这类状态判断（踩过：靠 JS 判，跨锚点选区仍会带进半死的节点）。
+
 
 ## 测试覆盖（改什么就跑什么）
 

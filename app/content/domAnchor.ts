@@ -113,6 +113,21 @@ export function hasTranslatableNode(range: Range): boolean {
 }
 
 /**
+ * 建一个锚点 span。display:contents 保证包裹前后布局一致；
+ * user-select:none 让"正在翻译的文本暂时选不中"——锚点里的文本会被流式写回
+ * 整体替换（textContent 赋值），选区落在里面活不过一次写入或回滚。顺带让
+ * 翻译中划下一段时不会把旧会话的锚点卷进新选区（跨过它浏览器会跳过）。
+ * 收尾/回滚 unwrap 成纯文本后，可选中性自动恢复。
+ */
+function createAnchor(): HTMLSpanElement {
+	const span = document.createElement("span");
+	span.className = SELECTED_CLASS;
+	span.style.display = "contents";
+	span.style.userSelect = "none";
+	return span;
+}
+
+/**
  * 把文本节点的 [start, end) 范围包一层 <span class="llm-selected"> 锚点。
  * 返回该 span，后续流式写回/恢复都直接操作它，无需计算 offset。
  */
@@ -121,9 +136,7 @@ export function wrapSelected(
 	start: number,
 	end: number,
 ): HTMLSpanElement {
-	const span = document.createElement("span");
-	span.className = SELECTED_CLASS;
-	span.style.display = "contents";
+	const span = createAnchor();
 
 	// splitText 拆出选中段：node 保留 [0, start)，selected 为 [start, end)
 	let selected = node;
@@ -145,9 +158,7 @@ export function wrapSelected(
  * 替换锚点即可恢复原始 DOM。
  */
 export function wrapElement(element: Element): HTMLSpanElement {
-	const span = document.createElement("span");
-	span.className = SELECTED_CLASS;
-	span.style.display = "contents";
+	const span = createAnchor();
 	element.parentNode?.insertBefore(span, element);
 	span.appendChild(element);
 	return span;

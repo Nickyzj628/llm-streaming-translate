@@ -31,16 +31,26 @@ import { showToast } from "@/utils/toast";
  * - InlineTranslator：选区锚点与按段写回；
  * - FloatingButton：浮动按钮的纯 UI。
  *
- * 为什么不单开一个 controller 文件：这里全部状态只有 activeSession 一项、
- * 对外动作只有 start/abort 两个，且只有本文件用——单独一层文件只多一次跳转。
+ * 为什么不单开一个 controller 文件：这里全部状态只有 activeSession + queued
+ * 两项、对外动作只有 request/abort 两个，且只有本文件用——单独一层只多一次跳转。
+ *
+ * **同一时刻只跑一个会话**（锚点、页级历史、toast 全是单例，并行会互相踩）。
+ * 翻译进行中用户还能继续划词，但点按钮不会再打断当前翻译，而是排队：
+ * 当前会话收尾（成功/失败）后自动开始下一单，latest-wins 只留一单待办。
  */
 
 /** 当前活跃会话（null 表示空闲）；会话结束或被打断后清空 */
 let activeSession: TranslationSession | null = null;
 
 /**
+ * 排队中的下一次翻译（null = 无）。存 Range + 当时选中的文本：
+ * 等当前会话收尾期间页面可能重绘/替换文本节点，开跑前要用文本比对验明它还认得上。
+ */
+let queued: { range: Range; text: string } | null = null;
+
+/**
  * 打断当前会话（若有）：回滚 DOM + 断开端口。空闲时是幂等空操作。
- * 重新划词 / 页面卸载都会走到这里，避免留下浪费的 background 请求。
+ * 只有页面卸载会走到这里——正常流程里会话都是自然收尾，然后接力下一单。
  */
 function abortCurrent(): void {
 	const session = activeSession;
@@ -75,11 +85,51 @@ function getPageMeta(): { title: string; description: string } {
 	return readPageMetaOnce(readDocumentMeta);
 }
 
-/** 翻译一个选区 Range（点击浮动按钮触发） */
-function startTranslation(range: Range): void {
-	// 打断前一个进行中的翻译（重新划词/取消选择都会走到这里）
-	abortCurrent();
+/**
+ * 请求翻译一个选区（点击浮动按钮触发）：空闲就直接开跑，正在翻译就排队等它收尾。
+ *
+ * 为什么排队而不是打断：打断会立刻回滚当前 DOM、丢掉已译部分（点一下新的就白翻
+ * 一场）；为什么不是并行：锚点、页级历史、toast 都是单例，并行会互相踩（重叠选区
+ * 还会让后建的锚点被先建的 textContent 写回整块删掉）。串行化顺带保证了"建新锚点
+ * 时 DOM 里没有别人的锚点"。
+ */
+function requestTranslation(range: Range): void {
+	if (activeSession === null) {
+		startTranslation(range);
+		return;
+	}
+	// latest-wins：用户又划了一段点了按钮，就换成最新这单，不排长队
+	queued = { range, text: range.toString() };
+	// 类型只能是 success（蓝色）/ error（红色），这里是非错误的中性提示
+	showToast("当前翻译结束后自动开始", "success");
+}
 
+/**
+ * 当前会话收尾后接力下一单（由 onEnded 调用）。
+ *
+ * 等待期间页面可能重绘、替换文本节点、甚至把选区里的内容改掉：Range 活着但文本
+ * 对不上就说明它已经不是用户当初选的那段了，丢弃并提示重划——绝不替用户翻别的文本。
+ */
+function startQueuedTranslation(): void {
+	const next = queued;
+	if (next === null || activeSession !== null) return;
+	queued = null;
+
+	const { range, text } = next;
+	const stillUsable =
+		range.startContainer.isConnected &&
+		range.endContainer.isConnected &&
+		!range.collapsed &&
+		range.toString() === text;
+	if (!stillUsable) {
+		showToast("页面内容已变化，请重新划词", "error");
+		return;
+	}
+	startTranslation(range);
+}
+
+/** 开跑一个会话。调用方必须保证当前空闲（requestTranslation / 接力队列） */
+function startTranslation(range: Range): void {
 	// 创建原地翻译器，收集文本节点、建立锚点、拿到每段协议行
 	const translator = createInlineTranslator(range);
 
@@ -108,11 +158,13 @@ function startTranslation(range: Range): void {
 			showToast(message, "error");
 		},
 		// 会话自然结束（成功/失败/放弃）时清活跃句柄，且必须确认它仍是当前会话——
-		// 旧会话的迟到回调不能把新会话的句柄清掉（闭包版踩过的时序 bug）
+		// 旧会话的迟到回调不能把新会话的句柄清掉（闭包版踩过的时序 bug）。
+		// 收尾后接力排队中的下一单（唯一放行点是这里：DOM 上已没有别人的锚点）
 		onEnded: () => {
 			if (activeSession === session) {
 				activeSession = null;
 			}
+			startQueuedTranslation();
 		},
 	});
 	activeSession = session;
@@ -147,23 +199,28 @@ function handleMouseDown(e: MouseEvent): void {
 }
 
 function handleMouseUp(e: MouseEvent): void {
+	// 只响应左键：右键（button === 2）也会触发 mouseup，不该参与划词流程
+	if (e.button !== 0) return;
 	if (isButtonElement(e.target as Node)) return;
 
 	requestAnimationFrame(() => {
-		// 先打断上一会话（重新划词或点击空白取消选择都会打断进行中的翻译；
-		// abort 对空闲状态是幂等安全的）
-		abortCurrent();
 		// 新的一次划词先把旧按钮收掉，检测结果回来前不显示任何东西
 		hideButton();
 
 		const selectedText = getSelectedText();
+		// 没有选区就什么都不做：点击页面任意位置（左键/右键）都不该打断进行中的
+		// 翻译——abort 会立刻回滚 DOM 并断开端口，等于"点一下就白翻了"
 		if (selectedText.length === 0) return;
 
 		// 语言检测之前先过一道预筛：纯 URL、纯数字符号、整块代码块翻不出东西，
 		// 既不该弹按钮，也不值得为它跑一次 CLD（同步判断，比检测还快）
 		const selection = window.getSelection();
 		if (!selection || selection.rangeCount === 0) return;
-		if (!shouldOfferTranslation(selection.getRangeAt(0), selectedText)) return;
+		const range = selection.getRangeAt(0);
+		if (!shouldOfferTranslation(range, selectedText)) return;
+		// 翻译进行中照样可以划词（点按钮也不会打断它，只会排队）：旧会话的锚点带
+		// user-select:none，划词根本选不进那些正在改写的文本，所以这里不必
+		// 再判"选区是否压在旧会话上"
 
 		void isAlreadyTargetLanguage(selectedText).then((alreadyTarget) => {
 			// 检测期间选区变了（多半是又快着划了下一段），这次结果直接作废
@@ -181,17 +238,17 @@ function handleMouseUp(e: MouseEvent): void {
 				selection.removeAllRanges();
 				// 点击浮动按钮即视为开始翻译：立即隐藏按钮，避免残留
 				hideButton();
-				startTranslation(range);
+				// 忙则排队（不打断正在跑的会话），闲则立即开始
+				requestTranslation(range);
 			});
 		});
 	});
 }
 
 function handleSelectionChange(): void {
-	// 翻译进行中不处理选区变化，避免干扰正在写回的锚点
-	if (activeSession !== null) return;
 	// 只处理清空：语言判定要调 CLD（异步），留给 mouseup 一次性做，
-	// 否则拖动选择时每个 selectionchange 都会发一次检测
+	// 否则拖动选择时每个 selectionchange 都会发一次检测。
+	// 翻译进行中也要收按钮（隐藏按钮不碰锚点），否则划完再点空白按钮会残留
 	if (getSelectedText().length === 0) {
 		hideButton();
 	}
@@ -202,6 +259,8 @@ function cleanup(): void {
 	document.removeEventListener("mouseup", handleMouseUp);
 	document.removeEventListener("selectionchange", handleSelectionChange);
 	hideButton();
+	// 页面要走了：待办一起丢掉，否则 abort 触发的 onEnded 会把队列又拉起来
+	queued = null;
 	abortCurrent();
 }
 
